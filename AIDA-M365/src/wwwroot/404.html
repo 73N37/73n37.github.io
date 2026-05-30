@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Omdirigerer...</title>
+    <script type="text/javascript">
+        // Store the original requested route in sessionStorage
+        var pathname = window.location.pathname;
+        var search = window.location.search;
+        var hash = window.location.hash;
+        
+        sessionStorage.setItem('redirect_path', pathname + search + hash);
+        
+        // Calculate the base path dynamically
+        // Handles both repository subfolders (/Godset/) and root user domains (73n37.github.io)
+        var segments = pathname.split('/');
+        var basePath = '/';
+        
+        if (segments.length > 2 && segments[1] === 'Godset') {
+            basePath = '/Godset/';
+        } else if (segments.length > 2 && segments[1] === '73N37.github.io') {
+            basePath = '/73N37.github.io/';
+        }
+        
+        // Redirect the browser back to index.html base URL
+        window.location.replace(window.location.origin + basePath);
+    </script>
+</head>
+<body>
+    <p>Omdirigerer til herregårdssystemet, venligst vent...</p>
+</body>
+</html>
