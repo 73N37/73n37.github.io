@@ -1,7 +1,10 @@
 @page "/upcoming-events"
+@implements IDisposable
 @using AIDA.M365.Models
 @using Microsoft.AspNetCore.Components
 @using MudBlazor
+@inject AIDA.M365.Services.IPostgresDatabaseService PostgresService
+@inject AIDA.M365.Services.IntegrationStateContainer StateContainer
 
 <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="pa-6" Style="background-color: #FAF9F6; min-height: 100vh; font-family: 'Playfair Display', 'Inter', sans-serif;">
     <MudStack Spacing="6">
@@ -414,6 +417,16 @@
                 <MudSelectItem Value="@("Brunch & Champagne")">Brunch & Champagne</MudSelectItem>
             </MudSelect>
 
+            <MudNumericField @bind-Value="_newPrice"
+                             Label="Pris (DKK)"
+                             Variant="Variant.Outlined"
+                             Margin="Margin.Dense"
+                             Min="0"
+                             Format="N0"
+                             Adornment="Adornment.End"
+                             AdornmentText="kr."
+                             HideSpinButtons="true" />
+
             @if (_isStaffView)
             {
                 <MudTextField @bind-Value="_newCoordinator" Label="Ansvarlig Koordinator" Variant="Variant.Outlined" Margin="Margin.Dense" />
@@ -474,6 +487,7 @@
     private string _newSubtype = "Bryllup";
     private int _newGuestCount = 100;
     private string _newCatering = "Gourmet Selskabsmenu";
+    private decimal _newPrice = 0;
     private string _newCoordinator = "Sarah Jenkins";
 
     // Main Event Edit variables inside Details Drawer
@@ -495,97 +509,32 @@
     private string _subLocation = "Den Store Lade";
     private Guid? _editingSubeventId;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        var today = DateTime.Today;
+        StateContainer.OnChange += OnStateChanged;
+        await LoadEventsAsync();
+    }
 
-        // Seed events exactly corresponding to Den Store Lade, Hovedbygningen, Søparken separate calendars
-        _allCards.AddRange(
-        [
-            new()
-            {
-                GraphEventId = "ballroom-evt-001",
-                MetadataId = Guid.NewGuid(),
-                Subject = "Kensington Bryllup i Den Store Lade",
-                BodyContent = "Eksklusivt bryllup i Den Store Lade med finere selskabsmenu.",
-                ColorHex = "#9c27b0", // Orchid/Lavender for Weddings
-                Priority = "High",
-                SectionKey = "confirmed",
-                StartUtc = new DateTimeOffset(today.Year, today.Month, 12, 11, 0, 0, TimeSpan.Zero),
-                EndUtc = new DateTimeOffset(today.Year, today.Month, 12, 18, 0, 0, TimeSpan.Zero),
-                EventSubtype = "Bryllup",
-                GuestCount = 120,
-                AssignedCoordinator = "Sarah Jenkins",
-                EstateArea = "Den Store Lade",
-                CateringOption = "Gourmet Selskabsmenu",
-                ActionItems = [
-                    "Dækning af borde til 120 gæster med dansegulv layout i laden",
-                    "Verify audio-visual microphone configuration for entrance speeches",
-                    "Coordinate guest check-in desk at barn main foyer"
-                ],
-                Subevents = [
-                    new() { Title = "Velkomstreception & Champagne", StartTime = new TimeSpan(11, 0, 0), EndTime = new TimeSpan(12, 30, 0), Location = "Søparken" },
-                    new() { Title = "Bryllupsmiddag & Taler", StartTime = new TimeSpan(13, 0, 0), EndTime = new TimeSpan(17, 0, 0), Location = "Den Store Lade" },
-                    new() { Title = "Brudevals & Kageskæring", StartTime = new TimeSpan(17, 15, 0), EndTime = new TimeSpan(18, 0, 0), Location = "Den Store Lade" }
-                ]
-            },
-            new()
-            {
-                GraphEventId = "pavilion-evt-002",
-                MetadataId = Guid.NewGuid(),
-                Subject = "Sterling Konference i Hovedbygningen",
-                BodyContent = "Dagsmøde og konference i Hovedbygningen.",
-                ColorHex = "#009688", // Teal/Sage for Conferences
-                Priority = "Normal",
-                SectionKey = "preparation",
-                StartUtc = new DateTimeOffset(today.Year, today.Month, 15, 8, 0, 0, TimeSpan.Zero),
-                EndUtc = new DateTimeOffset(today.Year, today.Month, 15, 14, 0, 0, TimeSpan.Zero),
-                EventSubtype = "Konference",
-                GuestCount = 80,
-                AssignedCoordinator = "Michael Chang",
-                EstateArea = "Hovedbygningen",
-                CateringOption = "Konference-dagsmenu",
-                ActionItems = [
-                    "Klargør projektor, lærred og AV-udstyr i Hovedbygningens mødesal",
-                    "Test outdoor LED string lighting for Hovedbygning terrace",
-                    "Arranger formiddagskaffe og forplejning til 80 deltagere"
-                ],
-                Subevents = [
-                    new() { Title = "Morgenmad & Netværk", StartTime = new TimeSpan(8, 0, 0), EndTime = new TimeSpan(9, 0, 0), Location = "Hovedbygningen" },
-                    new() { Title = "Formiddagssession & Keynote", StartTime = new TimeSpan(9, 0, 0), EndTime = new TimeSpan(12, 0, 0), Location = "Hovedbygningen" },
-                    new() { Title = "Forretningsfrokost", StartTime = new TimeSpan(12, 0, 0), EndTime = new TimeSpan(13, 0, 0), Location = "Hovedbygningen" }
-                ]
-            },
-            new()
-            {
-                GraphEventId = "gardens-evt-003",
-                MetadataId = Guid.NewGuid(),
-                Subject = "Midsommerfest i Søparken",
-                BodyContent = "Reception og fest i herregårdshaven (Søparken).",
-                ColorHex = "#D4AF37", // Warm Gold
-                Priority = "High",
-                SectionKey = "inquiry",
-                StartUtc = new DateTimeOffset(today.Year, today.Month, 22, 10, 0, 0, TimeSpan.Zero),
-                EndUtc = new DateTimeOffset(today.Year, today.Month, 22, 16, 0, 0, TimeSpan.Zero),
-                EventSubtype = "Bryllup",
-                GuestCount = 200,
-                AssignedCoordinator = "Sarah Jenkins",
-                EstateArea = "Søparken",
-                CateringOption = "Brunch & Champagne",
-                ActionItems = [
-                    "Opsætning af udendørstelte og stole i Søparken",
-                    "Coordinate outdoor seating arcs centered in park grounds",
-                    "Welcome signage styling setup at front estate gate"
-                ],
-                Subevents = [
-                    new() { Title = "Velkomst & Kaffe", StartTime = new TimeSpan(10, 0, 0), EndTime = new TimeSpan(11, 0, 0), Location = "Søparken" },
-                    new() { Title = "Have-reception & Champagne", StartTime = new TimeSpan(11, 0, 0), EndTime = new TimeSpan(14, 0, 0), Location = "Søparken" },
-                    new() { Title = "Brunch & Networking", StartTime = new TimeSpan(14, 0, 0), EndTime = new TimeSpan(16, 0, 0), Location = "Søparken" }
-                ]
-            }
-        ]);
-
+    private async Task LoadEventsAsync()
+    {
+        var events = await PostgresService.FetchAllEventsAsync();
+        _allCards.Clear();
+        _allCards.AddRange(events);
         GenerateCalendarGrid();
+        StateHasChanged();
+    }
+
+    private async void OnStateChanged()
+    {
+        await InvokeAsync(async () =>
+        {
+            await LoadEventsAsync();
+        });
+    }
+
+    public void Dispose()
+    {
+        StateContainer.OnChange -= OnStateChanged;
     }
 
     private void GenerateCalendarGrid()
@@ -690,7 +639,7 @@
         _isDetailsEditing = true;
     }
 
-    private void SaveEditedEvent()
+    private async Task SaveEditedEvent()
     {
         if (_selectedCard is null) return;
 
@@ -725,6 +674,12 @@
         _selectedCard.AssignedCoordinator = _editCoordinator;
         _selectedCard.ColorHex = GetColorForSubtype(_editSubtype);
 
+        await PostgresService.SaveEventAsync(_selectedCard);
+
+        var events = await PostgresService.FetchAllEventsAsync();
+        _allCards.Clear();
+        _allCards.AddRange(events);
+
         GenerateCalendarGrid();
         _isDetailsEditing = false;
         _logMessage = $"[Succes] Ændringer for selskabet '{_selectedCard.Subject}' blev gemt.";
@@ -749,7 +704,7 @@
         _subLocation = "Den Store Lade";
     }
 
-    private void SaveSubevent()
+    private async Task SaveSubevent()
     {
         if (_selectedCard is null) return;
 
@@ -802,15 +757,29 @@
             _logMessage = $"[Succes] Del-begivenheden '{_subTitle}' blev tilføjet til programmet.";
         }
 
+        await PostgresService.SaveEventAsync(_selectedCard);
+
+        var events = await PostgresService.FetchAllEventsAsync();
+        _allCards.Clear();
+        _allCards.AddRange(events);
+
+        GenerateCalendarGrid();
         CancelEditSubevent();
         StateHasChanged();
     }
 
-    private void DeleteSubevent(Subevent sub)
+    private async Task DeleteSubevent(Subevent sub)
     {
         if (_selectedCard is null) return;
 
         _selectedCard.Subevents.Remove(sub);
+        await PostgresService.SaveEventAsync(_selectedCard);
+
+        var events = await PostgresService.FetchAllEventsAsync();
+        _allCards.Clear();
+        _allCards.AddRange(events);
+
+        GenerateCalendarGrid();
         _logMessage = $"[System] Del-begivenheden '{sub.Title}' blev fjernet fra programmet.";
         StateHasChanged();
     }
@@ -825,6 +794,7 @@
         _newSubtype = "Bryllup";
         _newGuestCount = 100;
         _newCatering = "Gourmet Selskabsmenu";
+        _newPrice = 0;
         _newCoordinator = "Sarah Jenkins";
 
         _isCreateDrawerOpen = true;
@@ -841,13 +811,14 @@
         _newSubtype = "Bryllup";
         _newGuestCount = 100;
         _newCatering = "Gourmet Selskabsmenu";
+        _newPrice = 0;
         _newCoordinator = "Sarah Jenkins";
 
         _isCreateDrawerOpen = true;
         StateHasChanged();
     }
 
-    private void SaveNewReservation()
+    private async Task SaveNewReservation()
     {
         if (string.IsNullOrWhiteSpace(_newSubject))
         {
@@ -896,10 +867,16 @@
             AssignedCoordinator = coordinator,
             EstateArea = _newArea,
             CateringOption = _newCatering,
+            Price = _newPrice > 0 ? _newPrice : null,
             ActionItems = GetDefaultActionItems(_newSubtype, _newArea, _newGuestCount, _newCatering, coordinator)
         };
 
-        _allCards.Add(newCard);
+        await PostgresService.SaveEventAsync(newCard);
+
+        var events = await PostgresService.FetchAllEventsAsync();
+        _allCards.Clear();
+        _allCards.AddRange(events);
+
         GenerateCalendarGrid();
 
         _isCreateDrawerOpen = false;

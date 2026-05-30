@@ -120,7 +120,18 @@ public sealed class IntegrationStateContainer
 
     public bool IsSystemHealthy => IsM365Connected;
 
+    private System.Collections.Generic.List<AIDA.M365.Models.KanbanEventCard> _cards = [];
+    public System.Collections.Generic.List<AIDA.M365.Models.KanbanEventCard> Cards
+    {
+        get => _cards;
+        set
+        {
+            _cards = value ?? [];
+            NotifyStateChanged();
+        }
+    }
+
     public event Action? OnChange;
 
-    private void NotifyStateChanged() => OnChange?.Invoke();
+    public void NotifyStateChanged() => OnChange?.Invoke();
 }

@@ -3,6 +3,7 @@
 @using MudBlazor
 @inject AIDA.M365.Services.IntegrationStateContainer StateContainer
 @inject ISnackbar Snackbar
+@inject AIDA.M365.Services.IPostgresDatabaseService PostgresService
 
 <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="pa-6" Style="background-color: #FAF9F6; min-height: 100vh; font-family: 'Playfair Display', 'Inter', sans-serif;">
     <MudStack Spacing="6">
@@ -248,7 +249,10 @@
                     <MudStack Row="true" Spacing="2">
                         @if (_pgConnected)
                         {
-                            <MudButton Variant="Variant.Filled" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.PlayCircleFilled" OnClick="RunSqlScript" Style="background-color: #D4AF37; color: white; border-radius: 6px; font-weight: bold;">
+                            <MudButton Variant="Variant.Filled" Color="Color.Warning" StartIcon="@Icons.Material.Filled.CloudUpload" OnClick="SeedDemoData" Style="background-color: #D4AF37; color: white; border-radius: 6px; font-weight: bold;">
+                                Fyld PostgreSQL med Demo-data
+                            </MudButton>
+                            <MudButton Variant="Variant.Filled" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.PlayCircleFilled" OnClick="RunSqlScript" Style="background-color: #2C3E50; color: white; border-radius: 6px; font-weight: bold;">
                                 Initialiser Skema
                             </MudButton>
                             <MudButton Variant="Variant.Outlined" Color="Color.Error" OnClick="DisconnectPg" Style="border-radius: 6px;">
@@ -512,6 +516,13 @@ CREATE TABLE IF NOT EXISTS subevents (
     {
         _statusMessage = "[PostgreSQL Link] PostgreSQL-skema blev initialiseret succesfuldt på DigitalOcean-serveren!";
         Snackbar.Add("Skema initialiseret på DigitalOcean PostgreSQL!", Severity.Success);
+    }
+
+    private async Task SeedDemoData()
+    {
+        await PostgresService.SeedDemoDataToDbAsync();
+        _statusMessage = "[PostgreSQL Link] PostgreSQL-databasen er blevet fyldt med realistisk demo-data (Bryllupper, Konferencer)!";
+        Snackbar.Add("Demo-data fyldt i PostgreSQL!", Severity.Success);
     }
 
     private void SimulateExamConnection()

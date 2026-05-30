@@ -157,6 +157,16 @@
                             }
                         </MudGrid>
                     </div>
+                    <!-- Price Badge -->
+                    @if (card.Price.HasValue && card.Price.Value > 0)
+                    {
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Style="background: linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.06)); border: 1px solid rgba(212,175,55,0.3); border-radius: 8px; padding: 6px 12px;">
+                            <MudIcon Icon="@Icons.Material.Filled.Payments" Size="Size.Small" Style="color: #D4AF37; opacity: 0.9;" />
+                            <MudText Typo="Typo.caption" Class="font-weight-bold" Style="color: #D4AF37; font-size: 0.82rem; letter-spacing: 0.3px;">
+                                @card.Price.Value.ToString("N0") kr.
+                            </MudText>
+                        </MudStack>
+                    }
  
                     <!-- Action items Preview (Completed ones strikethrough) -->
                     @if (card.ActionItems.Count > 0)

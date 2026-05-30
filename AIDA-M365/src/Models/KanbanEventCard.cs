@@ -44,6 +44,8 @@ public sealed class KanbanEventCard
     public string? EstateArea { get; set; } // e.g. "Grand Ballroom", "Rose Gardens", "Lakeside Pavilion"
     
     public string? CateringOption { get; set; } // e.g. "Fine Dining", "Buffet", "Champagne Brunch"
+    
+    public decimal? Price { get; set; } // Total price for the event in DKK
 
     // e-conomic ERP invoice integration state
     public int? EconomicInvoiceNumber { get; set; }

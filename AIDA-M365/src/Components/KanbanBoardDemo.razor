@@ -1,7 +1,10 @@
 @page "/home"
+@implements IDisposable
 @using AIDA.M365.Models
 @using Microsoft.AspNetCore.Components
 @using MudBlazor
+@inject AIDA.M365.Services.IPostgresDatabaseService PostgresService
+@inject AIDA.M365.Services.IntegrationStateContainer StateContainer
 
 <MudContainer MaxWidth="MaxWidth.False" Class="pa-6" Style="background: transparent;">
     <MudStack Spacing="6">
@@ -219,6 +222,16 @@
                 <MudSelectItem Value="@("Brunch & Champagne")">Brunch & Champagne</MudSelectItem>
             </MudSelect>
 
+            <MudNumericField @bind-Value="_newPrice"
+                             Label="Pris (DKK)"
+                             Variant="Variant.Outlined"
+                             Margin="Margin.Dense"
+                             Min="0"
+                             Format="N0"
+                             Adornment="Adornment.End"
+                             AdornmentText="kr."
+                             HideSpinButtons="true" />
+
             @if (_isStaffView)
             {
                 <MudTextField @bind-Value="_newCoordinator" Label="Ansvarlig Koordinator" Variant="Variant.Outlined" Margin="Margin.Dense" />
@@ -339,100 +352,34 @@
     private string _newSubtype = "Bryllup";
     private int _newGuestCount = 50;
     private string _newCatering = "Gourmet Selskabsmenu";
+    private decimal _newPrice = 0;
     private string _newCoordinator = "Sarah Jenkins";
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        var todayUtc = DateTimeOffset.UtcNow.Date;
+        StateContainer.OnChange += OnStateChanged;
+        await LoadEventsAsync();
+    }
 
-        _cards.AddRange(
-        [
-            new()
-            {
-                GraphEventId = "demo-event-001",
-                MetadataId = Guid.NewGuid(),
-                Subject = "Kensington Bryllup i Den Store Lade",
-                BodyContent = "Et eksklusivt gods-bryllup med fuld forplejning, blomsterdekorationer i Den Store Lade og velkomstchampagne i Søparken.",
-                ColorHex = "#D4AF37", // Elegant Gold for Wedding Bookings
-                Priority = "High",
-                SectionKey = "confirmed",
-                StartUtc = todayUtc.AddHours(11),
-                EndUtc = todayUtc.AddHours(18),
-                EventSubtype = "Bryllup",
-                GuestCount = 120,
-                AssignedCoordinator = "Sarah Jenkins",
-                EstateArea = "Den Store Lade",
-                CateringOption = "Gourmet Selskabsmenu",
-                EconomicInvoiceNumber = 104052,
-                EconomicPaymentLink = "https://payment.e-conomic.com/invoice/104052/pay?token=demo_token_johnson",
-                Subevents = [
-                    new() { Title = "Velkomstreception & Champagne", StartTime = new TimeSpan(11, 0, 0), EndTime = new TimeSpan(12, 30, 0), Location = "Søparken" },
-                    new() { Title = "Bryllupsmiddag & Taler", StartTime = new TimeSpan(13, 0, 0), EndTime = new TimeSpan(17, 0, 0), Location = "Den Store Lade" },
-                    new() { Title = "Brudevals & Kageskæring", StartTime = new TimeSpan(17, 15, 0), EndTime = new TimeSpan(18, 0, 0), Location = "Den Store Lade" }
-                ]
-            },
-            new()
-            {
-                GraphEventId = "demo-event-002",
-                MetadataId = Guid.NewGuid(),
-                Subject = "Sterling Konference i Hovedbygningen",
-                BodyContent = "Dagsmøde og konference i Hovedbygningen for Manor Holdings. Kræver AV-opsætning og konference-dagsmenu.",
-                ColorHex = "#10B981", // Emerald Green for Birthday Parties
-                Priority = "Normal",
-                SectionKey = "preparation",
-                StartUtc = todayUtc.AddHours(8),
-                EndUtc = todayUtc.AddHours(14),
-                EventSubtype = "Konference",
-                GuestCount = 80,
-                AssignedCoordinator = "Michael Chang",
-                EstateArea = "Hovedbygningen",
-                CateringOption = "Konference-dagsmenu",
-                Subevents = [
-                    new() { Title = "Morgenmad & Netværk", StartTime = new TimeSpan(8, 0, 0), EndTime = new TimeSpan(9, 0, 0), Location = "Hovedbygningen" },
-                    new() { Title = "Formiddagssession & Keynote", StartTime = new TimeSpan(9, 0, 0), EndTime = new TimeSpan(12, 0, 0), Location = "Hovedbygningen" },
-                    new() { Title = "Forretningsfrokost", StartTime = new TimeSpan(12, 0, 0), EndTime = new TimeSpan(13, 0, 0), Location = "Hovedbygningen" }
-                ]
-            },
-            new()
-            {
-                GraphEventId = "demo-event-003",
-                MetadataId = Guid.NewGuid(),
-                Subject = "Midsommerfest i Søparken Henvendelse",
-                BodyContent = "Forespørgsel på leje af herregårdshaven (Søparken) og Hovedbygningen. Kræver formelt tilbud med pakkeopstilling og kapacitetstjek.",
-                ColorHex = "#D4AF37", // Elegant Gold for Weddings
-                Priority = "High",
-                SectionKey = "inquiry",
-                StartUtc = todayUtc.AddDays(2).AddHours(9),
-                EndUtc = todayUtc.AddDays(2).AddHours(15),
-                EventSubtype = "Bryllup",
-                GuestCount = 200,
-                AssignedCoordinator = "Sarah Jenkins",
-                EstateArea = "Søparken",
-                CateringOption = "Brunch & Champagne",
-                Subevents = [
-                    new() { Title = "Velkomst & Kaffe", StartTime = new TimeSpan(10, 0, 0), EndTime = new TimeSpan(11, 0, 0), Location = "Søparken" },
-                    new() { Title = "Have-reception & Champagne", StartTime = new TimeSpan(11, 0, 0), EndTime = new TimeSpan(14, 0, 0), Location = "Søparken" },
-                    new() { Title = "Brunch & Networking", StartTime = new TimeSpan(14, 0, 0), EndTime = new TimeSpan(16, 0, 0), Location = "Søparken" }
-                ]
-            },
-            new()
-            {
-                GraphEventId = "event-fail", // Dragging this triggers the demo failure and optimistic rollback!
-                MetadataId = Guid.NewGuid(),
-                Subject = "Overlappende Jagtselskab [Simuleret Fejl]",
-                BodyContent = "Dette arrangement demonstrerer automatisk tilbagerulning i systemet, hvis synkronisering med Microsoft 365 fejler.",
-                ColorHex = "#EF4444", // High Contrast Red
-                Priority = "High",
-                SectionKey = "inquiry",
-                StartUtc = todayUtc.AddDays(2).AddHours(10),
-                EndUtc = todayUtc.AddDays(2).AddHours(13),
-                EventSubtype = "Jagt & Event",
-                GuestCount = 50,
-                AssignedCoordinator = "Michael Chang",
-                EstateArea = "Hovedbygningen",
-                CateringOption = "Gourmet Selskabsmenu"
-            }
-        ]);
+    private async Task LoadEventsAsync()
+    {
+        var events = await PostgresService.FetchAllEventsAsync();
+        _cards.Clear();
+        _cards.AddRange(events);
+        StateHasChanged();
+    }
+
+    private async void OnStateChanged()
+    {
+        await InvokeAsync(async () =>
+        {
+            await LoadEventsAsync();
+        });
+    }
+
+    public void Dispose()
+    {
+        StateContainer.OnChange -= OnStateChanged;
     }
 
     private string CalculateTotalRevenue()
@@ -499,30 +446,38 @@
         return Task.CompletedTask;
     }
 
-    private Task OnCardUpdatedAsync(KanbanEventCard card)
+    private async Task OnCardUpdatedAsync(KanbanEventCard card)
     {
+        await PostgresService.SaveEventAsync(card);
+
+        var events = await PostgresService.FetchAllEventsAsync();
+        _cards.Clear();
+        _cards.AddRange(events);
+
         _lastUpdatedMessage =
             $"[Synkronisering] Gen-synkroniserede '{card.Subject}' via MS Graph. Ny tid: {card.StartUtc.ToLocalTime():g} i kolonnen '{card.SectionKey}'.";
 
-        return Task.CompletedTask;
+        StateHasChanged();
     }
 
-    private Task OnSectionDeletedAsync(KanbanSectionDefinition section)
+    private async Task OnSectionDeletedAsync(KanbanSectionDefinition section)
     {
         var cardsInDeletedSection = _cards.Where(c => c.SectionKey == section.Key).ToList();
         foreach (var card in cardsInDeletedSection)
         {
-            _cards.Remove(card);
+            await PostgresService.DeleteEventAsync(card.GraphEventId);
         }
+
+        var events = await PostgresService.FetchAllEventsAsync();
+        _cards.Clear();
+        _cards.AddRange(events);
 
         _sections.Remove(section);
         _lastUpdatedMessage = $"Slettede kolonnen: {section.Title}";
         StateHasChanged();
-
-        return Task.CompletedTask;
     }
 
-    private void SaveNewReservation()
+    private async Task SaveNewReservation()
     {
         if (string.IsNullOrWhiteSpace(_newSubject))
         {
@@ -575,10 +530,15 @@
             GuestCount = _newGuestCount,
             AssignedCoordinator = _isStaffView ? _newCoordinator : "Afventer godkendelse",
             EstateArea = _newArea,
-            CateringOption = _newCatering
+            CateringOption = _newCatering,
+            Price = _newPrice > 0 ? _newPrice : null
         };
 
-        _cards.Add(newCard);
+        await PostgresService.SaveEventAsync(newCard);
+
+        var events = await PostgresService.FetchAllEventsAsync();
+        _cards.Clear();
+        _cards.AddRange(events);
 
         _isCreateDrawerOpen = false;
         
@@ -591,6 +551,7 @@
         _newSubtype = "Bryllup";
         _newGuestCount = 50;
         _newCatering = "Gourmet Selskabsmenu";
+        _newPrice = 0;
         _newCoordinator = "Sarah Jenkins";
 
         _lastUpdatedMessage = _isStaffView 
