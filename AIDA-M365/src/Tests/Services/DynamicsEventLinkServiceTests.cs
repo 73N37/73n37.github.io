@@ -21,7 +21,7 @@ public sealed class DynamicsEventLinkServiceTests
     private readonly Mock<ILogger<DynamicsEventLinkService>> _loggerMock = new();
     private readonly DynamicsOptions _options = new()
     {
-        EnvironmentUrl = "https://engestofte.crm4.dynamics.com/",
+        EnvironmentUrl = "https://73N37.crm4.dynamics.com/",
         ApiVersion = "v9.2"
     };
 
@@ -72,7 +72,7 @@ public sealed class DynamicsEventLinkServiceTests
         var end = start.AddHours(2);
         var update = new DynamicsEventUpdate(logicalName, entityId, graphEventId, "confirmed", start, end);
 
-        var expectedUri = $"https://engestofte.crm4.dynamics.com/api/data/v9.2/{expectedEntitySetName}({entityId})";
+        var expectedUri = $"https://73N37.crm4.dynamics.com/api/data/v9.2/{expectedEntitySetName}({entityId})";
 
         _handlerMock.Protected()
             .Setup<Task<HttpResponseMessage>>(
