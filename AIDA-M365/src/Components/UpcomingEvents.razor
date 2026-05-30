@@ -1,0 +1,657 @@
+@page "/upcoming-events"
+@using AIDA.M365.Models
+@using Microsoft.AspNetCore.Components
+@using MudBlazor
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="pa-6" Style="background-color: #FAF9F6; min-height: 100vh; font-family: 'Playfair Display', 'Inter', sans-serif;">
+    <MudStack Spacing="6">
+        
+        <!-- Header Banner with Premium Aesthetics -->
+        <MudPaper Class="pa-6 rounded-lg shadow-sm" Elevation="0" Style="background-color: white; border-bottom: 4px solid #D4AF37;">
+            <MudGrid AlignItems="AlignItems.Center">
+                <MudItem xs="12" md="5">
+                    <MudStack Spacing="1">
+                        <MudText Typo="Typo.h4" Class="font-weight-bold" Style="color: #2C3E50; letter-spacing: -0.5px;">Godskalender & Belægning</MudText>
+                        <MudText Typo="Typo.subtitle2" Style="color: #7F8C8D; font-weight: 300;">
+                            Fælles kalender med tilgængelighed for Den Store Lade, Hovedbygningen og Søparken på Engestofte Gods.
+                        </MudText>
+                    </MudStack>
+                </MudItem>
+                <MudItem xs="12" md="7" Class="d-flex justify-md-end justify-start align-center gap-4 flex-wrap">
+                    <!-- Hybrid Access Control Toggle -->
+                    <MudButtonGroup Color="Color.Primary" Variant="Variant.Outlined" Style="border-radius: 8px;">
+                        <MudButton OnClick="() => SetAccessMode(true)" 
+                                   Variant="@(_isStaffView ? Variant.Filled : Variant.Outlined)"
+                                   Style="@(_isStaffView ? "background-color: #2C3E50; color: white;" : "")">
+                            Ansvarlig Koordinator
+                        </MudButton>
+                        <MudButton OnClick="() => SetAccessMode(false)" 
+                                   Variant="@(!_isStaffView ? Variant.Filled : Variant.Outlined)"
+                                   Style="@(!_isStaffView ? "background-color: #2C3E50; color: white;" : "")">
+                            Offentlig Tilgængelighed
+                        </MudButton>
+                    </MudButtonGroup>
+
+                    @if (_isStaffView)
+                    {
+                        <MudButton StartIcon="@Icons.Material.Filled.Add" 
+                                   Variant="Variant.Filled" 
+                                   Color="Color.Secondary" 
+                                   OnClick="OpenCreateDrawer" 
+                                   Style="border-radius: 8px; background-color: #D4AF37; color: white; font-weight: bold; padding: 10px 20px;">
+                            Opret Selskab
+                        </MudButton>
+                    }
+
+                    <MudMenu StartIcon="@Icons.Material.Filled.Download" Label="Eksporter Program" Color="Color.Primary" Variant="Variant.Filled" Style="border-radius: 8px; background-color: #2C3E50; color: white; padding: 6px 12px;">
+                        <MudMenuItem OnClick="SimulatePdfExport">Eksporter PDF Dagsorden</MudMenuItem>
+                        <MudMenuItem OnClick="SimulateExcelExport">Hent Forplejningsliste (Excel)</MudMenuItem>
+                    </MudMenu>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+
+        <!-- Dynamic Success Logs -->
+        @if (!string.IsNullOrWhiteSpace(_logMessage))
+        {
+            <MudAlert Severity="Severity.Success" Dense="true" Variant="Variant.Outlined" Style="border-radius: 8px; border: 1px solid #D4AF37; background-color: white;">
+                @_logMessage
+            </MudAlert>
+        }
+
+        <!-- Calendar Month Navigation -->
+        <MudPaper Class="pa-4 rounded-lg d-flex justify-between align-center" Elevation="0" Style="background-color: white;">
+            <MudIconButton Icon="@Icons.Material.Filled.ChevronLeft" Color="Color.Primary" OnClick="PreviousMonth" />
+            <MudText Typo="Typo.h5" Class="font-weight-bold" Style="color: #2C3E50; text-transform: capitalize;">@_currentDate.ToString("MMMM yyyy", new System.Globalization.CultureInfo("da-DK"))</MudText>
+            <MudIconButton Icon="@Icons.Material.Filled.ChevronRight" Color="Color.Primary" OnClick="NextMonth" />
+        </MudPaper>
+
+        <!-- Custom high-fidelity monthly calendar grid -->
+        <MudPaper Class="pa-4 rounded-lg" Outlined="true" Style="background-color: white;">
+            <!-- Day of Week Headers -->
+            <MudGrid Spacing="1" Class="mb-2">
+                @foreach (var dayName in _dayNames)
+                {
+                    <MudItem xs="1" Style="width: 14.28%; max-width: 14.28%; flex-basis: 14.28%;">
+                        <MudPaper Class="pa-2 text-center" Elevation="0" Style="background-color: #FAF9F6;">
+                            <MudText Typo="Typo.caption" Class="font-weight-bold" Style="color: #2C3E50;">@dayName</MudText>
+                        </MudPaper>
+                    </MudItem>
+                }
+            </MudGrid>
+
+            <!-- Calendar Days Grid -->
+            <MudGrid Spacing="1">
+                @foreach (var cell in _calendarCells)
+                {
+                    <MudItem xs="1" Style="width: 14.28%; max-width: 14.28%; flex-basis: 14.28%;">
+                        <MudPaper Class="pa-2 rounded-lg d-flex flex-column justify-between calendar-day-cell" 
+                                  Outlined="true" 
+                                  Style="@GetDayCellStyle(cell)"
+                                  Elevation="0"
+                                  @onclick="() => OnCellClicked(cell.Date)">
+                            <!-- Day Number -->
+                            <MudStack Row="true" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+                                <MudText Typo="Typo.caption" 
+                                         Class="@(cell.IsCurrentMonth ? "font-weight-bold text-dark" : "text-muted")"
+                                         Style="@(cell.Date.Date == DateTime.Today ? "background-color: #D4AF37; color: white; padding: 2px 6px; border-radius: 50%;" : "")">
+                                    @cell.Date.Day
+                                </MudText>
+                            </MudStack>
+
+                            <!-- Events List inside Day Cell -->
+                            <div class="mt-2 d-flex flex-column gap-1" style="min-height: 80px;">
+                                @foreach (var card in cell.Cards)
+                                {
+                                    <div class="pa-2 rounded text-truncate hover-card" 
+                                         style="@GetCardStyle(card)"
+                                         @onclick="() => OpenEventDetails(card)"
+                                         @onclick:stopPropagation="true">
+                                        @if (_isStaffView)
+                                        {
+                                            <MudText Typo="Typo.caption" Class="font-weight-bold text-truncate d-block">
+                                                @card.Subject
+                                            </MudText>
+                                            <MudText Typo="Typo.caption" Style="font-size: 0.7rem; color: #555;" Class="d-block text-truncate">
+                                                <MudIcon Icon="@Icons.Material.Filled.People" Size="Size.Small" Style="font-size: 0.75rem; vertical-align: middle; margin-right: 2px;" />
+                                                @card.GuestCount Gæster
+                                            </MudText>
+                                        }
+                                        else
+                                        {
+                                            <MudText Typo="Typo.caption" Class="font-weight-bold text-truncate d-block text-center" Style="font-style: italic; color: #555;">
+                                                Reserveret
+                                            </MudText>
+                                            <MudText Typo="Typo.caption" Style="font-size: 0.65rem; color: #666;" Class="d-block text-center text-truncate">
+                                                @card.EstateArea
+                                            </MudText>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </MudPaper>
+                    </MudItem>
+                }
+            </MudGrid>
+        </MudPaper>
+    </MudStack>
+</MudContainer>
+
+<!-- Detailed Action Drawer -->
+<MudDrawer @bind-Open="_isDrawerOpen" Anchor="Anchor.Right" Width="450px" Elevation="4" Style="background-color: #FAF9F6; font-family: 'Inter', sans-serif;">
+    @if (_selectedCard is not null)
+    {
+        <MudStack Class="pa-6" Spacing="4">
+            <!-- Header -->
+            <MudStack Row="true" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+                <MudChip Size="Size.Medium" 
+                         Color="@(_selectedCard.EventSubtype == "Bryllup" || _selectedCard.EventSubtype == "Wedding" ? Color.Secondary : Color.Primary)" 
+                         Variant="Variant.Filled"
+                         Class="font-weight-bold">
+                    @(string.Equals(_selectedCard.EventSubtype, "Wedding", StringComparison.OrdinalIgnoreCase) ? "Bryllup" : string.Equals(_selectedCard.EventSubtype, "Birthday", StringComparison.OrdinalIgnoreCase) ? "Privat Fest" : _selectedCard.EventSubtype)
+                </MudChip>
+                <MudIconButton Icon="@Icons.Material.Filled.Close" Color="Color.Default" OnClick="() => _isDrawerOpen = false" />
+            </MudStack>
+
+            <MudText Typo="Typo.h5" Class="font-weight-bold" Style="color: #2C3E50;">@_selectedCard.Subject</MudText>
+            
+            <MudDivider />
+
+            <!-- Core Specs Grid -->
+            <MudPaper Class="pa-4 rounded-lg" Outlined="true" Style="background-color: white;">
+                <MudStack Spacing="3">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudIcon Icon="@Icons.Material.Filled.CalendarMonth" Color="Color.Primary" />
+                        <MudStack Spacing="0">
+                            <MudText Typo="Typo.caption" Class="text-muted font-weight-bold">DATO & TIDSPUNKT</MudText>
+                            <MudText Typo="Typo.body2">@_selectedCard.StartUtc.ToLocalTime().ToString("dd. MMM yyyy, HH:mm", new System.Globalization.CultureInfo("da-DK")) - @_selectedCard.EndUtc.ToLocalTime().ToString("HH:mm")</MudText>
+                        </MudStack>
+                    </MudStack>
+
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudIcon Icon="@Icons.Material.Filled.Place" Color="Color.Primary" />
+                        <MudStack Spacing="0">
+                            <MudText Typo="Typo.caption" Class="text-muted font-weight-bold">RESERVERET OMRÅDE</MudText>
+                            <MudText Typo="Typo.body2">@_selectedCard.EstateArea</MudText>
+                        </MudStack>
+                    </MudStack>
+
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudIcon Icon="@Icons.Material.Filled.People" Color="Color.Primary" />
+                        <MudStack Spacing="0">
+                            <MudText Typo="Typo.caption" Class="text-muted font-weight-bold">ANTAL GÆSTER</MudText>
+                            <MudText Typo="Typo.body2">@_selectedCard.GuestCount Gæster</MudText>
+                        </MudStack>
+                    </MudStack>
+
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudIcon Icon="@Icons.Material.Filled.Person" Color="Color.Primary" />
+                        <MudStack Spacing="0">
+                            <MudText Typo="Typo.caption" Class="text-muted font-weight-bold">ANSVARLIG KOORDINATOR</MudText>
+                            <MudText Typo="Typo.body2">@_selectedCard.AssignedCoordinator</MudText>
+                        </MudStack>
+                    </MudStack>
+
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudIcon Icon="@Icons.Material.Filled.Restaurant" Color="Color.Primary" />
+                        <MudStack Spacing="0">
+                            <MudText Typo="Typo.caption" Class="text-muted font-weight-bold">FORPLEJNINGSAFTALE</MudText>
+                            <MudText Typo="Typo.body2">@_selectedCard.CateringOption</MudText>
+                        </MudStack>
+                    </MudStack>
+                </MudStack>
+            </MudPaper>
+
+            <!-- OpenAI Action Items -->
+            @if (_selectedCard.ActionItems.Count > 0)
+            {
+                <MudPaper Class="pa-4 rounded-lg" Outlined="true" Style="background-color: white; border-left: 4px solid #D4AF37;">
+                    <MudStack Spacing="2">
+                        <MudText Typo="Typo.subtitle2" Class="font-weight-bold" Style="color: #2C3E50;">Azure OpenAI Foreslået Huskeliste & Klargøring</MudText>
+                        @foreach (var task in _selectedCard.ActionItems)
+                        {
+                            <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                                <MudIcon Icon="@Icons.Material.Filled.CheckBoxOutlineBlank" Color="Color.Primary" Size="Size.Small" />
+                                <MudText Typo="Typo.caption" Class="text-muted">@task</MudText>
+                            </MudStack>
+                        }
+                    </MudStack>
+                </MudPaper>
+            }
+        </MudStack>
+    }
+</MudDrawer>
+
+<!-- Opret Reservation Drawer -->
+<MudDrawer @bind-Open="_isCreateDrawerOpen" Anchor="Anchor.Right" Width="450px" Elevation="4" Style="background-color: #FAF9F6; font-family: 'Inter', sans-serif;">
+    <MudStack Class="pa-6" Spacing="4">
+        <!-- Header -->
+        <MudStack Row="true" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+            <MudText Typo="Typo.h5" Class="font-weight-bold" Style="color: #2C3E50;">
+                @(_isStaffView ? "Opret Selskab" : "Send Forespørgsel om Reservation")
+            </MudText>
+            <MudIconButton Icon="@Icons.Material.Filled.Close" Color="Color.Default" OnClick="() => _isCreateDrawerOpen = false" />
+        </MudStack>
+        <MudDivider />
+
+        <MudTextField @bind-Value="_newSubject" 
+                      Label="@(_isStaffView ? "Selskabsnavn / Emne" : "Dit Navn / Selskabsnavn")" 
+                      Variant="Variant.Outlined" 
+                      Margin="Margin.Dense" 
+                      Required="true" />
+        
+        <MudDatePicker @bind-Date="_newDate" Label="Dato" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true" />
+        
+        <MudGrid Spacing="2">
+            <MudItem xs="6">
+                <MudTimePicker @bind-Time="_newStartTime" Label="Starttidspunkt" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true" />
+            </MudItem>
+            <MudItem xs="6">
+                <MudTimePicker @bind-Time="_newEndTime" Label="Sluttidspunkt" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true" />
+            </MudItem>
+        </MudGrid>
+
+        <MudSelect @bind-Value="_newArea" Label="Vælg Område på Engestofte Gods" Variant="Variant.Outlined" Margin="Margin.Dense">
+            <MudSelectItem Value="@("Den Store Lade")">Den Store Lade</MudSelectItem>
+            <MudSelectItem Value="@("Hovedbygningen")">Hovedbygningen</MudSelectItem>
+            <MudSelectItem Value="@("Søparken")">Søparken</MudSelectItem>
+        </MudSelect>
+
+        <MudSelect @bind-Value="_newSubtype" Label="Kategori" Variant="Variant.Outlined" Margin="Margin.Dense">
+            <MudSelectItem Value="@("Bryllup")">Bryllup</MudSelectItem>
+            <MudSelectItem Value="@("Konference")">Konference</MudSelectItem>
+            <MudSelectItem Value="@("Privat Fest")">Privat Fest</MudSelectItem>
+            <MudSelectItem Value="@("Jagt & Event")">Jagt & Event</MudSelectItem>
+        </MudSelect>
+
+        <MudNumericField @bind-Value="_newGuestCount" Label="Antal Gæster" Variant="Variant.Outlined" Margin="Margin.Dense" Min="1" />
+
+        <MudSelect @bind-Value="_newCatering" Label="Forplejning" Variant="Variant.Outlined" Margin="Margin.Dense">
+            <MudSelectItem Value="@("Gourmet Selskabsmenu")">Gourmet Selskabsmenu</MudSelectItem>
+            <MudSelectItem Value="@("Konference-dagsmenu")">Konference-dagsmenu</MudSelectItem>
+            <MudSelectItem Value="@("Brunch & Champagne")">Brunch & Champagne</MudSelectItem>
+        </MudSelect>
+
+        @if (_isStaffView)
+        {
+            <MudTextField @bind-Value="_newCoordinator" Label="Ansvarlig Koordinator" Variant="Variant.Outlined" Margin="Margin.Dense" />
+        }
+
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveNewReservation" Style="background-color: #2C3E50; color: white; border-radius: 8px; font-weight: bold; margin-top: 10px;">
+            @(_isStaffView ? "Gem Selskab" : "Send Forespørgselsmail")
+        </MudButton>
+    </MudStack>
+</MudDrawer>
+
+<style>
+    .hover-card {
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    
+    .hover-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.08);
+    }
+
+    .calendar-day-cell {
+        transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+    }
+    
+    .calendar-day-cell:hover {
+        background-color: #FAF6EE !important; /* Soft Linen-Cream hover color */
+        border-color: #D4AF37 !important; /* Elegant Gold border focus */
+    }
+</style>
+
+@code {
+    private DateTime _currentDate = DateTime.Today;
+    private bool _isStaffView = true;
+    private string? _logMessage;
+
+    private readonly string[] _dayNames = ["Man", "Tir", "Ons", "Tor", "Fre", "Lør", "Søn"];
+    private readonly List<CalendarDayCell> _calendarCells = [];
+    private readonly List<KanbanEventCard> _allCards = [];
+
+    private bool _isDrawerOpen;
+    private KanbanEventCard? _selectedCard;
+
+    // Create Drawer variables
+    private bool _isCreateDrawerOpen;
+    private string _newSubject = string.Empty;
+    private DateTime? _newDate = DateTime.Today;
+    private TimeSpan? _newStartTime = new TimeSpan(11, 0, 0);
+    private TimeSpan? _newEndTime = new TimeSpan(18, 0, 0);
+    private string _newArea = "Den Store Lade";
+    private string _newSubtype = "Bryllup";
+    private int _newGuestCount = 100;
+    private string _newCatering = "Gourmet Selskabsmenu";
+    private string _newCoordinator = "Sarah Jenkins";
+
+    protected override void OnInitialized()
+    {
+        var today = DateTime.Today;
+
+        // Seed events exactly corresponding to Den Store Lade, Hovedbygningen, Søparken separate calendars
+        _allCards.AddRange(
+        [
+            new()
+            {
+                GraphEventId = "ballroom-evt-001",
+                MetadataId = Guid.NewGuid(),
+                Subject = "Kensington Bryllup i Den Store Lade",
+                BodyContent = "Eksklusivt bryllup i Den Store Lade med finere selskabsmenu.",
+                ColorHex = "#9c27b0", // Orchid/Lavender for Weddings
+                Priority = "High",
+                SectionKey = "confirmed",
+                StartUtc = new DateTimeOffset(today.Year, today.Month, 12, 11, 0, 0, TimeSpan.Zero),
+                EndUtc = new DateTimeOffset(today.Year, today.Month, 12, 18, 0, 0, TimeSpan.Zero),
+                EventSubtype = "Bryllup",
+                GuestCount = 120,
+                AssignedCoordinator = "Sarah Jenkins",
+                EstateArea = "Den Store Lade",
+                CateringOption = "Gourmet Selskabsmenu",
+                ActionItems = [
+                    "Dækning af borde til 120 gæster med dansegulv layout i laden",
+                    "Verify audio-visual microphone configuration for entrance speeches",
+                    "Coordinate guest check-in desk at barn main foyer"
+                ]
+            },
+            new()
+            {
+                GraphEventId = "pavilion-evt-002",
+                MetadataId = Guid.NewGuid(),
+                Subject = "Sterling Konference i Hovedbygningen",
+                BodyContent = "Dagsmøde og konference i Hovedbygningen.",
+                ColorHex = "#009688", // Teal/Sage for Conferences
+                Priority = "Normal",
+                SectionKey = "preparation",
+                StartUtc = new DateTimeOffset(today.Year, today.Month, 15, 8, 0, 0, TimeSpan.Zero),
+                EndUtc = new DateTimeOffset(today.Year, today.Month, 15, 14, 0, 0, TimeSpan.Zero),
+                EventSubtype = "Konference",
+                GuestCount = 80,
+                AssignedCoordinator = "Michael Chang",
+                EstateArea = "Hovedbygningen",
+                CateringOption = "Konference-dagsmenu",
+                ActionItems = [
+                    "Klargør projektor, lærred og AV-udstyr i Hovedbygningens mødesal",
+                    "Test outdoor LED string lighting for Hovedbygning terrace",
+                    "Arranger formiddagskaffe og forplejning til 80 deltagere"
+                ]
+            },
+            new()
+            {
+                GraphEventId = "gardens-evt-003",
+                MetadataId = Guid.NewGuid(),
+                Subject = "Midsommerfest i Søparken",
+                BodyContent = "Reception og fest i herregårdshaven (Søparken).",
+                ColorHex = "#D4AF37", // Warm Gold
+                Priority = "High",
+                SectionKey = "inquiry",
+                StartUtc = new DateTimeOffset(today.Year, today.Month, 22, 10, 0, 0, TimeSpan.Zero),
+                EndUtc = new DateTimeOffset(today.Year, today.Month, 22, 16, 0, 0, TimeSpan.Zero),
+                EventSubtype = "Bryllup",
+                GuestCount = 200,
+                AssignedCoordinator = "Sarah Jenkins",
+                EstateArea = "Søparken",
+                CateringOption = "Brunch & Champagne",
+                ActionItems = [
+                    "Opsætning af udendørstelte og stole i Søparken",
+                    "Coordinate outdoor seating arcs centered in park grounds",
+                    "Welcome signage styling setup at front estate gate"
+                ]
+            }
+        ]);
+
+        GenerateCalendarGrid();
+    }
+
+    private void GenerateCalendarGrid()
+    {
+        _calendarCells.Clear();
+
+        var firstDayOfMonth = new DateTime(_currentDate.Year, _currentDate.Month, 1);
+        
+        // Find how many padding cells we need at start (adjusting for Mon-Sun grid)
+        int offset = ((int)firstDayOfMonth.DayOfWeek - 1 + 7) % 7;
+        var startDay = firstDayOfMonth.AddDays(-offset);
+
+        // Fill exactly 35 cells representing 5 calendar weeks
+        for (int i = 0; i < 35; i++)
+        {
+            var date = startDay.AddDays(i);
+            
+            // Link matching events falling on this date
+            var dayEvents = _allCards.Where(c => c.StartUtc.Date == date.Date).ToList();
+
+            _calendarCells.Add(new CalendarDayCell
+            {
+                Date = date,
+                IsCurrentMonth = date.Month == _currentDate.Month,
+                Cards = dayEvents
+            });
+        }
+    }
+
+    private string GetDayCellStyle(CalendarDayCell cell)
+    {
+        var style = "background-color: white; min-height: 120px; border: 1px solid #ECEFF1; cursor: pointer;";
+        if (!cell.IsCurrentMonth)
+        {
+            style += " opacity: 0.4; background-color: #ECEFF1;";
+        }
+        return style;
+    }
+
+    private string GetCardStyle(KanbanEventCard card)
+    {
+        var baseStyle = "border-radius: 4px; padding: 4px 8px; font-size: 0.8rem;";
+        if (card.EventSubtype == "Bryllup" || card.EventSubtype == "Wedding")
+        {
+            // Orchid/Lavender theme for Bryllup
+            baseStyle += " background-color: #F3E5F5; border-left: 4px solid #9c27b0; color: #4A148C;";
+        }
+        else if (card.EventSubtype == "Konference" || card.EventSubtype == "Conference")
+        {
+            // Teal/Sage theme for Konference
+            baseStyle += " background-color: #E0F2F1; border-left: 4px solid #009688; color: #004D40;";
+        }
+        else if (card.EventSubtype == "Privat Fest" || card.EventSubtype == "Birthday")
+        {
+            // Pink/Rose theme for Privat Fest
+            baseStyle += " background-color: #FCE4EC; border-left: 4px solid #e91e63; color: #880E4F;";
+        }
+        else
+        {
+            // Orange/Gold for Jagt & Event and others
+            baseStyle += " background-color: #FFF3E0; border-left: 4px solid #ff9800; color: #E65100;";
+        }
+        return baseStyle;
+    }
+
+    private void SetAccessMode(bool isStaff)
+    {
+        _isStaffView = isStaff;
+        _logMessage = $"[Adgangskontrol] Skiftede til {(_isStaffView ? "Gods-koordinator" : "Offentlig tilgængelighed (Skrivebeskyttet)")} kalendervisning.";
+        StateHasChanged();
+    }
+
+    private void OpenEventDetails(KanbanEventCard card)
+    {
+        if (!_isStaffView)
+        {
+            // Public view sees a simple busy blocker notification
+            _logMessage = $"[Tilgængelighed] Området {card.EstateArea} er reserveret på dette tidspunkt. Kontakt os for at forespørge om en booking.";
+            return;
+        }
+
+        _selectedCard = card;
+        _isDrawerOpen = true;
+    }
+
+    private void OpenCreateDrawer()
+    {
+        _newSubject = string.Empty;
+        _newDate = DateTime.Today;
+        _newStartTime = new TimeSpan(11, 0, 0);
+        _newEndTime = new TimeSpan(18, 0, 0);
+        _newArea = "Den Store Lade";
+        _newSubtype = "Bryllup";
+        _newGuestCount = 100;
+        _newCatering = "Gourmet Selskabsmenu";
+        _newCoordinator = "Sarah Jenkins";
+
+        _isCreateDrawerOpen = true;
+        StateHasChanged();
+    }
+
+    private void OnCellClicked(DateTime date)
+    {
+        _newSubject = string.Empty;
+        _newDate = date;
+        _newStartTime = new TimeSpan(11, 0, 0);
+        _newEndTime = new TimeSpan(18, 0, 0);
+        _newArea = "Den Store Lade";
+        _newSubtype = "Bryllup";
+        _newGuestCount = 100;
+        _newCatering = "Gourmet Selskabsmenu";
+        _newCoordinator = "Sarah Jenkins";
+
+        _isCreateDrawerOpen = true;
+        StateHasChanged();
+    }
+
+    private void SaveNewReservation()
+    {
+        if (string.IsNullOrWhiteSpace(_newSubject))
+        {
+            _logMessage = _isStaffView 
+                ? "[Systemfejl] Selskabsnavn skal udfyldes." 
+                : "[Systemfejl] Dit Navn eller selskabsnavn skal udfyldes.";
+            return;
+        }
+        if (!_newDate.HasValue || !_newStartTime.HasValue || !_newEndTime.HasValue)
+        {
+            _logMessage = "[Systemfejl] Dato og klokkeslæt skal angives.";
+            return;
+        }
+
+        var localStart = _newDate.Value.Date.Add(_newStartTime.Value);
+        var localEnd = _newDate.Value.Date.Add(_newEndTime.Value);
+        
+        if (localEnd <= localStart)
+        {
+            _logMessage = "[Systemfejl] Sluttidspunkt skal være efter starttidspunkt.";
+            return;
+        }
+
+        DateTimeOffset startUtc = new DateTimeOffset(localStart, TimeZoneInfo.Local.GetUtcOffset(localStart));
+        DateTimeOffset endUtc = new DateTimeOffset(localEnd, TimeZoneInfo.Local.GetUtcOffset(localEnd));
+
+        var coordinator = _isStaffView ? _newCoordinator : "Sarah Jenkins";
+        var subject = _isStaffView ? _newSubject : $"[Forespørgsel] {_newSubject}";
+        var body = _isStaffView 
+            ? $"Manuelt oprettet reservation. Forplejning: {_newCatering}."
+            : $"Kundeforespørgsel modtaget via online kalender. Forplejning: {_newCatering}.";
+
+        var newCard = new KanbanEventCard
+        {
+            GraphEventId = $"custom-evt-{Guid.NewGuid()}",
+            MetadataId = Guid.NewGuid(),
+            Subject = subject,
+            BodyContent = body,
+            ColorHex = GetColorForSubtype(_newSubtype),
+            Priority = "Normal",
+            SectionKey = _isStaffView ? "confirmed" : "inquiry",
+            StartUtc = startUtc,
+            EndUtc = endUtc,
+            EventSubtype = _newSubtype,
+            GuestCount = _newGuestCount,
+            AssignedCoordinator = coordinator,
+            EstateArea = _newArea,
+            CateringOption = _newCatering,
+            ActionItems = GetDefaultActionItems(_newSubtype, _newArea, _newGuestCount, _newCatering, coordinator)
+        };
+
+        _allCards.Add(newCard);
+        GenerateCalendarGrid();
+
+        _isCreateDrawerOpen = false;
+        _logMessage = _isStaffView 
+            ? $"[Succes] Selskabet '{newCard.Subject}' blev oprettet med succes i {newCard.EstateArea}."
+            : $"[Forespørgsel Sendt] Mange tak! Din reservation-forespørgsel til '{_newSubject}' i {newCard.EstateArea} er modtaget. Vi kontakter dig hurtigst muligt!";
+        StateHasChanged();
+    }
+
+    private string GetColorForSubtype(string subtype)
+    {
+        return subtype switch
+        {
+            "Bryllup" => "#9c27b0",
+            "Konference" => "#009688",
+            "Privat Fest" => "#e91e63",
+            "Jagt & Event" => "#ff9800",
+            _ => "#607d8b"
+        };
+    }
+
+    private List<string> GetDefaultActionItems(string subtype, string area, int guests, string catering, string coordinator)
+    {
+        if (subtype == "Bryllup")
+        {
+            return
+            [
+                $"Borddækning i {area} til {guests} gæster med dansegulv",
+                $"Koordiner bryllupsmenuen '{catering}' med herregårdskøkkenet",
+                $"Koordinator {coordinator} holder briefing med serveringspersonale"
+            ];
+        }
+        else if (subtype == "Konference")
+        {
+            return
+            [
+                $"Klargør AV-udstyr, projektor og Wi-Fi i {area}",
+                $"Anret {catering} i pauserne til {guests} deltagere",
+                $"Koordinator {coordinator} sikrer kaffe- og vandopfyldning under mødet"
+            ];
+        }
+        else
+        {
+            return
+            [
+                $"Klargør modtagelse i {area} til {guests} gæster",
+                $"Koordiner anretning af {catering}",
+                $"Koordinator {coordinator} sikrer klargøring af lydanlæg"
+            ];
+        }
+    }
+
+    private void PreviousMonth()
+    {
+        _currentDate = _currentDate.AddMonths(-1);
+        GenerateCalendarGrid();
+    }
+
+    private void NextMonth()
+    {
+        _currentDate = _currentDate.AddMonths(1);
+        GenerateCalendarGrid();
+    }
+
+    private void SimulatePdfExport()
+    {
+        _logMessage = $"[System Hub] Kalender-agenda i PDF-format eksporteret for {_currentDate.ToString("MMMM yyyy", new System.Globalization.CultureInfo("da-DK"))} til 'Estate_Agenda_{_currentDate:MMyyyy}.pdf'.";
+    }
+
+    private void SimulateExcelExport()
+    {
+        _logMessage = $"[System Hub] Excel-ark med gæsteantal og catering-valg hentet til 'Catering_Reservations_{_currentDate:MMyyyy}.xlsx'.";
+    }
+
+    private class CalendarDayCell
+    {
+        public DateTime Date { get; set; }
+        public bool IsCurrentMonth { get; set; }
+        public List<KanbanEventCard> Cards { get; set; } = [];
+    }
+}

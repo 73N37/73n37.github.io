@@ -1,0 +1,30 @@
+{
+  "vatPercentage": 25.0,
+  "currency": "DKK",
+  "packages": [
+    {
+      "name": "Bryllup & Reception Gods-Pakke",
+      "productNumber": "PROD-001",
+      "basePrice": 35000.0,
+      "description": "Eksklusiv 2-dages leje af Den Store Lade og adgang til Søparken til bryllup."
+    },
+    {
+      "name": "Gourmet Selskabsmenu (Pr. Gæst)",
+      "productNumber": "PROD-002",
+      "basePrice": 1250.0,
+      "description": "Gourmet 5-retters selskabsmenu kreeret af godsets kokke med tilhørende vinmenu."
+    },
+    {
+      "name": "Konference & Dagsmøde Gods-Pakke",
+      "productNumber": "PROD-001",
+      "basePrice": 15000.0,
+      "description": "Dagsleje af Hovedbygningen til konferencer og møder inkl. AV-udstyr."
+    },
+    {
+      "name": "Koordinator- & AV-personale service",
+      "productNumber": "PROD-003",
+      "basePrice": 4500.0,
+      "description": "Dedikeret koordinator, opsætning af sale, AV-support og efterfølgende rengøring."
+    }
+  ]
+}

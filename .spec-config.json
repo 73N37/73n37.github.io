@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "project": "Godset Estate Venue Command Center",
+  "version": "1.0.0",
+  "specifications": {
+    "directory": "specs",
+    "requiredSpecs": [
+      "system-architecture.md",
+      "booking-orchestration.md",
+      "invoicing-integration.md"
+    ],
+    "constraints": {
+      "noPlaceholders": true,
+      "requireTraceability": true,
+      "enforceDnsSanity": true
+    }
+  },
+  "simulation": {
+    "engine": "simulation/sim-engine.py",
+    "runner": "simulation/run-simulation.sh",
+    "seeding": "material-data"
+  },
+  "validators": {
+    "specVerifier": "validators/verify-specs.py",
+    "blueprintCheck": "validators/check-blueprint.sh"
+  }
+}

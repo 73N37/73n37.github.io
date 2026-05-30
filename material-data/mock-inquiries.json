@@ -1,0 +1,29 @@
+[
+  {
+    "senderName": "Eleanor Kensington",
+    "senderEmail": "eleanor.kensington@londonhigh.co.uk",
+    "subject": "Forespørgsel: Drømmebryllup på Engestofte Gods - August 2026",
+    "body": "Kære selskabsafdeling, Jeg ønsker at booke en vielse og bryllupsreception for ca. 120 gæster den 15. august 2026. Vi vil meget gerne have adgang til Den Store Lade og Søparken. Kan I venligst undersøge om denne dato er ledig og oplyse os om forplejningspakker?",
+    "eventSubtype": "Bryllup",
+    "estimatedGuestCount": 120,
+    "targetArea": "Den Store Lade"
+  },
+  {
+    "senderName": "Lord Sterling",
+    "senderEmail": "sterling@manorholdings.com",
+    "subject": "Forespørgsel: Konference og dagsmøde for herregårdsbestyrelsen",
+    "body": "Hej, Vi ønsker at leje Hovedbygningen til et dagsmøde og konference den 19. september 2026. Vi forventer omkring 80 deltagere. Vi har brug for fuld AV-opsætning og konference-dagsmenu.",
+    "eventSubtype": "Konference",
+    "estimatedGuestCount": 80,
+    "targetArea": "Hovedbygningen"
+  },
+  {
+    "senderName": "Victoria Duchess of York",
+    "senderEmail": "victoria@duchyofyork.org",
+    "subject": "Forespørgsel: Midsommerfest i Søparken",
+    "body": "Hej, Jeg er i gang med at arrangere en midsommerfest den 4. juli 2026. Vi ønsker at reservere Søparken til 200 gæster med Brunch & Champagne. Bekræft venligst modtagelse.",
+    "eventSubtype": "Bryllup",
+    "estimatedGuestCount": 200,
+    "targetArea": "Søparken"
+  }
+]

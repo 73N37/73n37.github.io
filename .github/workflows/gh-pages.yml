@@ -1,0 +1,47 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main  # Triggers deployment when you push to the main branch
+
+permissions:
+  contents: write  # Gives permission to publish to the gh-pages branch
+
+jobs:
+  deploy-to-github-pages:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Checkout the source code
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # 2. Setup the .NET 8.0 SDK
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+
+      # 3. Publish the Blazor WebAssembly app in Release mode
+      - name: Publish Blazor WASM
+        run: dotnet publish AIDA-M365/src/AIDA.M365.csproj -c Release -o release
+
+      # 4. Dynamically configure routing for GitHub Pages
+      - name: Configure GitHub Pages Routing
+        run: |
+          # Get repo name from repository info (e.g. "Godset")
+          REPO_NAME=$(echo "${{ github.repository }}" | cut -d '/' -f 2)
+          echo "Configuring index.html base href to: /$REPO_NAME/"
+          
+          # Replace <base href="/" /> with <base href="/REPO_NAME/" /> in index.html
+          sed -i "s|<base href=\"/\" />|<base href=\"/$REPO_NAME/\" />|g" release/wwwroot/index.html
+          
+          # Create .nojekyll to prevent GitHub from blocking Blazor framework files starting with underscore
+          touch release/wwwroot/.nojekyll
+
+      # 5. Deploy to the gh-pages branch using a secure action
+      - name: Deploy to GitHub Pages Branch
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: release/wwwroot
+          branch: gh-pages

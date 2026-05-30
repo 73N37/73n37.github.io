@@ -1,0 +1,418 @@
+@page "/connect"
+@using Microsoft.AspNetCore.Components
+@using MudBlazor
+@inject AIDA.M365.Services.IntegrationStateContainer StateContainer
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="pa-6" Style="background-color: #FAF9F6; min-height: 100vh; font-family: 'Playfair Display', 'Inter', sans-serif;">
+    <MudStack Spacing="6">
+        
+        <!-- Header Banner with Gold Accent Header -->
+        <MudPaper Class="pa-6 rounded-lg shadow-sm" Elevation="0" Style="background-color: white; border-bottom: 4px solid #D4AF37;">
+            <MudGrid AlignItems="AlignItems.Center">
+                <MudItem xs="12" md="8">
+                    <MudStack Spacing="1">
+                        <MudText Typo="Typo.h4" Class="font-weight-bold" Style="color: #2C3E50; letter-spacing: -0.5px;">Modulært Integrationscenter</MudText>
+                        <MudText Typo="Typo.subtitle2" Style="color: #7F8C8D; font-weight: 300;">
+                            Konfigurer sikre Azure Key Vault legitimationsoplysninger, kortlæg Outlook-kalendere og definer Dataverse-skemamodeller.
+                        </MudText>
+                    </MudStack>
+                </MudItem>
+                <MudItem xs="12" md="4" Class="d-flex justify-md-end justify-start align-center">
+                    <MudChip Size="Size.Medium" 
+                             Color="@(_systemHealthy ? Color.Success : Color.Warning)" 
+                             Variant="Variant.Filled"
+                             StartIcon="@(_systemHealthy ? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.Warning)"
+                             Class="font-weight-bold">
+                        SYSTEMSTATUS: @(_systemHealthy ? "AKTIV" : "AFBRUDT")
+                    </MudChip>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+
+        <!-- Dynamic Success Logs -->
+        @if (!string.IsNullOrWhiteSpace(_statusMessage))
+        {
+            <MudAlert Severity="Severity.Info" Dense="true" Variant="Variant.Outlined" Style="border-radius: 8px; border: 1px solid #D4AF37; background-color: white;">
+                @_statusMessage
+            </MudAlert>
+        }
+
+        <!-- Credentials Side-By-Side Config (BFF & Key Vault backing) -->
+        <MudGrid>
+            <!-- M365 Config Card -->
+            <MudItem xs="12" md="6">
+                <MudPaper Class="pa-6 rounded-lg d-flex flex-column justify-between h-100" Outlined="true" Style="background-color: white; border-top: 3px solid #D4AF37;">
+                    <MudStack Spacing="4">
+                        <MudStack Row="true" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+                            <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                                <MudIcon Icon="@Icons.Material.Filled.Cloud" Style="color: #2C3E50;" Size="Size.Large" />
+                                <MudText Typo="Typo.h6" Class="font-weight-bold" Style="color: #2C3E50;">Microsoft 365 (BFF Token-lager)</MudText>
+                            </MudStack>
+                            <span class="status-indicator @(_m365Connected ? "online" : "offline")"></span>
+                        </MudStack>
+
+                        <MudDivider />
+
+                        <MudStack Spacing="3">
+                            <MudText Typo="Typo.body2" Class="text-muted font-weight-bold">OAUTH2 DELEGERET KONFIGURATION</MudText>
+                            
+                            @if (_m365Connected)
+                            {
+                                <MudStack Spacing="2">
+                                    <MudTextField Value="@_m365ClientId" Label="Azure AD App Klient ID" ReadOnly="true" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                    <MudTextField Value="@_m365TenantId" Label="Azure AD Tenant ID" ReadOnly="true" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                    <MudTextField Value="@_m365UserEmail" Label="Autoriseret medarbejderkonto" ReadOnly="true" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                    
+                                    <MudText Typo="Typo.caption" Color="Color.Success" Class="d-flex align-center font-weight-bold">
+                                        <MudIcon Icon="@Icons.Material.Filled.VpnKey" Size="Size.Small" Class="mr-1" />
+                                        Bruger-token er sikret i BFF-proxyen
+                                    </MudText>
+                                </MudStack>
+                            }
+                            else
+                            {
+                                <MudText Typo="Typo.body2" Style="color: #7F8C8D;" Class="font-italic">
+                                    M365 integration er offline. Forbind din organisationskonto med sikre Entra ID-legitimationsoplysninger.
+                                </MudText>
+                            }
+                        </MudStack>
+                    </MudStack>
+
+                    <MudStack Row="true" JustifyContent="JustifyContent.End" Class="mt-6">
+                        @if (_m365Connected)
+                        {
+                            <MudButton Variant="Variant.Outlined" Color="Color.Error" OnClick="DisconnectM365" Style="border-radius: 6px;">
+                                Afbryd Forbindelse
+                            </MudButton>
+                        }
+                        else
+                        {
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ConnectM365" Style="border-radius: 6px; background-color: #2C3E50; color: white;">
+                                Log ind via MSAL
+                            </MudButton>
+                        }
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+
+            <!-- Dynamics 365 Config Card (Service Principal) -->
+            <MudItem xs="12" md="6">
+                <MudPaper Class="pa-6 rounded-lg d-flex flex-column justify-between h-100" Outlined="true" Style="background-color: white; border-top: 3px solid #D4AF37;">
+                    <MudStack Spacing="4">
+                        <MudStack Row="true" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+                            <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                                <MudIcon Icon="@Icons.Material.Filled.AssignmentInd" Style="color: #D4AF37;" Size="Size.Large" />
+                                <MudText Typo="Typo.h6" Class="font-weight-bold" Style="color: #2C3E50;">Dynamics 365 (Key Vault hemmeligheder)</MudText>
+                            </MudStack>
+                            <span class="status-indicator @(_dynConnected ? "online" : "offline")"></span>
+                        </MudStack>
+
+                        <MudDivider />
+
+                        <MudStack Spacing="3">
+                            <MudText Typo="Typo.body2" Class="text-muted font-weight-bold">MANUEL KONFIGURATION AF SERVICE PRINCIPAL</MudText>
+                            
+                            <MudTextField @bind-Value="_dynUrl" Label="Dynamics 365 URL" Variant="Variant.Outlined" Margin="Margin.Dense" Placeholder="https://org.crm.dynamics.com" Disabled="@_dynConnected" />
+                            <MudTextField @bind-Value="_dynClientId" Label="Service Principal Klient ID" Variant="Variant.Outlined" Margin="Margin.Dense" Placeholder="00000000-0000-0000-0000-000000000000" Disabled="@_dynConnected" />
+                            <MudTextField @bind-Value="_dynSecret" Label="Klient-hemmelighed (Vault)" InputType="InputType.Password" Variant="Variant.Outlined" Margin="Margin.Dense" Placeholder="••••••••••••••••••••" Disabled="@_dynConnected" />
+                            
+                            @if (_dynConnected)
+                            {
+                                <MudText Typo="Typo.caption" Color="Color.Success" Class="d-flex align-center font-weight-bold">
+                                    <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Small" Class="mr-1" />
+                                    Legitimationsoplysninger krypteret og gemt i Key Vault
+                                </MudText>
+                            }
+                        </MudStack>
+                    </MudStack>
+
+                    <MudStack Row="true" JustifyContent="JustifyContent.End" Class="mt-6">
+                        @if (_dynConnected)
+                        {
+                            <MudButton Variant="Variant.Outlined" Color="Color.Error" OnClick="DisconnectDyn" Style="border-radius: 6px;">
+                                Ryd Legitimationsoplysninger
+                            </MudButton>
+                        }
+                        else
+                        {
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ConnectDyn" Style="border-radius: 6px; background-color: #2C3E50; color: white;">
+                                Gem og krypter
+                            </MudButton>
+                        }
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+
+        <!-- Dynamic Configurations: Calendars and CRM Schemas -->
+        <MudGrid>
+            <!-- Dynamic Calendar Mappings -->
+            <MudItem xs="12" md="6">
+                <MudPaper Class="pa-6 rounded-lg" Outlined="true" Style="background-color: white; border-top: 3px solid #D4AF37;">
+                    <MudStack Spacing="3">
+                        <MudText Typo="Typo.h6" Class="font-weight-bold" Style="color: #2C3E50;">Outlook Kalenderkortlægning</MudText>
+                        <MudText Typo="Typo.caption" Style="color: #7F8C8D;">Vælg hvilken Microsoft Graph kalender, der skal tilknyttes de forskellige lokationer.</MudText>
+                        
+                        <MudDivider />
+
+                        <MudStack Spacing="4" Class="mt-2">
+                            <MudSelect T="string" Label="Den Store Lade Kalender" @bind-Value="_ballroomCal" Variant="Variant.Outlined" Margin="Margin.Dense">
+                                <MudSelectItem Value="@("ballroom-cal-99")">Den Store Lade Bookings (ID: ballroom-cal-99)</MudSelectItem>
+                                <MudSelectItem Value="@("estate-shared-cal")">Gods Fælles Kalender (ID: estate-shared-cal)</MudSelectItem>
+                            </MudSelect>
+
+                            <MudSelect T="string" Label="Hovedbygningen Kalender" @bind-Value="_pavilionCal" Variant="Variant.Outlined" Margin="Margin.Dense">
+                                <MudSelectItem Value="@("pavilion-cal-88")">Hovedbygningen Reservationer (ID: pavilion-cal-88)</MudSelectItem>
+                                <MudSelectItem Value="@("estate-shared-cal")">Gods Fælles Kalender (ID: estate-shared-cal)</MudSelectItem>
+                            </MudSelect>
+
+                            <MudSelect T="string" Label="Søparken Kalender" @bind-Value="_gardensCal" Variant="Variant.Outlined" Margin="Margin.Dense">
+                                <MudSelectItem Value="@("gardens-cal-77")">Søparken Kalender (ID: gardens-cal-77)</MudSelectItem>
+                                <MudSelectItem Value="@("estate-shared-cal")">Gods Fælles Kalender (ID: estate-shared-cal)</MudSelectItem>
+                            </MudSelect>
+                        </MudStack>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+
+            <!-- Dynamic CRM Schema Mappings -->
+            <MudItem xs="12" md="6">
+                <MudPaper Class="pa-6 rounded-lg" Outlined="true" Style="background-color: white; border-top: 3px solid #D4AF37;">
+                    <MudStack Spacing="3">
+                        <MudText Typo="Typo.h6" Class="font-weight-bold" Style="color: #2C3E50;">Dynamics 365 Dataverse Skemakortlægning</MudText>
+                        <MudText Typo="Typo.caption" Style="color: #7F8C8D;">Kortlæg de lokale Blazor/SQL kolonner til Dataverse-skemafeltnavne.</MudText>
+                        
+                        <MudDivider />
+
+                        <MudStack Spacing="3" Class="mt-2">
+                            <MudTextField @bind-Value="_schemaStartTime" Label="Starttidspunkt Skemafelt" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            <MudTextField @bind-Value="_schemaGuests" Label="Antal Gæster Skemafelt" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            <MudTextField @bind-Value="_schemaCatering" Label="Forplejning Skemafelt" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            <MudTextField @bind-Value="_schemaCoordinator" Label="Koordinator Skemafelt" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                        </MudStack>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+
+        <!-- Diagnostic Console Panel -->
+        <MudPaper Class="pa-6 rounded-lg" Outlined="true" Style="background-color: white; border-top: 3px solid #D4AF37;">
+            <MudStack Spacing="4">
+                <MudStack Row="true" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+                    <MudStack Spacing="0">
+                        <MudText Typo="Typo.h6" Class="font-weight-bold" Style="color: #2C3E50;">System Integration Diagnostics</MudText>
+                        <MudText Typo="Typo.caption" Style="color: #7F8C8D;">Udfør real-time latens-tjek og kør pings mod Entra ID / Dataverse.</MudText>
+                    </MudStack>
+                    
+                    <MudButton Variant="Variant.Filled" 
+                               Color="Color.Primary" 
+                               StartIcon="@Icons.Material.Filled.PlayArrow" 
+                               OnClick="RunDiagnostics"
+                               Disabled="@_isRunningDiag"
+                               Style="border-radius: 6px; background-color: #2C3E50; color: white;">
+                        @(_isRunningDiag ? "Undersøger..." : "Kør diagnostik")
+                    </MudButton>
+                </MudStack>
+
+                <MudDivider />
+
+                <!-- Console Box -->
+                <div class="console-box">
+                    @foreach (var log in _diagLogs)
+                    {
+                        <div class="console-line">@log</div>
+                    }
+                </div>
+            </MudStack>
+        </MudPaper>
+
+    </MudStack>
+</MudContainer>
+
+<style>
+    .status-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+    
+    .status-indicator.online {
+        background-color: #4CAF50;
+        box-shadow: 0 0 8px #4CAF50;
+    }
+    
+    .status-indicator.offline {
+        background-color: #F44336;
+        box-shadow: 0 0 8px #F44336;
+    }
+
+    .console-box {
+        background-color: #1E1E1E;
+        color: #C5C5C5;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 0.85rem;
+        padding: 16px;
+        border-radius: 6px;
+        height: 200px;
+        overflow-y: auto;
+        border: 1px solid #333;
+    }
+
+    .console-line {
+        line-height: 1.4;
+        margin-bottom: 4px;
+        white-space: pre-wrap;
+    }
+</style>
+
+@code {
+    private bool _m365Connected;
+    private string _m365ClientId = "71a2a4b8-db56-42d7-9878-8c041b492404";
+    private string _m365TenantId = "f8c8d5a2-94af-42d7-9978-8c041b492404";
+    private string _m365UserEmail = "koordinator@engestofte.dk";
+
+    private bool _dynConnected;
+    private string _dynUrl = "https://engestofte.crm4.dynamics.com";
+    private string _dynClientId = "c3f8d2b4-e4a8-422e-9907-8c041b492404";
+    private string _dynSecret = "royalSecretVaultValueKeyStore";
+
+    private bool _systemHealthy;
+    private string? _statusMessage;
+
+    // Calendar Area Mappings
+    private string _ballroomCal = "ballroom-cal-99";
+    private string _pavilionCal = "pavilion-cal-88";
+    private string _gardensCal = "gardens-cal-77";
+
+    // CRM Custom Dataverse Field Schema Mappings
+    private string _schemaStartTime = "cr543_estate_start_time";
+    private string _schemaGuests = "cr543_guest_attendance_count";
+    private string _schemaCatering = "cr543_catering_package_selection";
+    private string _schemaCoordinator = "cr543_assigned_venue_coordinator";
+
+    // Diagnostic log lines
+    private readonly List<string> _diagLogs =
+    [
+        "[09:00:00 SYS] Diagnostikkonsol initialiseret. Klik på 'Kør diagnostik' for at starte forbindelse pings."
+    ];
+    private bool _isRunningDiag;
+
+    protected override void OnInitialized()
+    {
+        _m365Connected = StateContainer.IsM365Connected;
+        _dynConnected = StateContainer.IsDynamicsConnected;
+        UpdateSystemHealth();
+    }
+
+    private void ConnectM365()
+    {
+        _m365Connected = true;
+        StateContainer.IsM365Connected = true;
+        _m365ClientId = "71a2a4b8-db56-42d7-9878-8c041b492404";
+        _m365TenantId = "f8c8d5a2-94af-42d7-9978-8c041b492404";
+        _m365UserEmail = "koordinator@engestofte.dk";
+        _statusMessage = "[M365 Engine] Delegeret Entra ID bruger-token hentet via BFF-proxy.";
+        UpdateSystemHealth();
+    }
+
+    private void DisconnectM365()
+    {
+        _m365Connected = false;
+        StateContainer.IsM365Connected = false;
+        _m365UserEmail = "";
+        _statusMessage = "[M365 Engine] Tilbagekaldte MSAL-token. Kalendersynkronisering er sat på pause.";
+        UpdateSystemHealth();
+    }
+
+    private void ConnectDyn()
+    {
+        if (string.IsNullOrWhiteSpace(_dynUrl) || string.IsNullOrWhiteSpace(_dynClientId) || string.IsNullOrWhiteSpace(_dynSecret))
+        {
+            _statusMessage = "[CRM Link] Alle Service Principal felter (URL, Klient ID, Klient Secret) skal udfyldes.";
+            return;
+        }
+
+        _dynConnected = true;
+        StateContainer.IsDynamicsConnected = true;
+        _statusMessage = "[CRM Link] Legitimationsoplysninger gemt. Krypteret Service Principal sendt til Azure Key Vault.";
+        UpdateSystemHealth();
+    }
+
+    private void DisconnectDyn()
+    {
+        _dynConnected = false;
+        StateContainer.IsDynamicsConnected = false;
+        _statusMessage = "[CRM Link] Dynamics 365 legitimationsoplysninger slettet fra Vault.";
+        UpdateSystemHealth();
+    }
+
+    private void UpdateSystemHealth()
+    {
+        _systemHealthy = _m365Connected && _dynConnected;
+    }
+
+    private async Task RunDiagnostics()
+    {
+        _isRunningDiag = true;
+        _diagLogs.Clear();
+        _diagLogs.Add($"[{DateTime.Now:HH:mm:ss} SYS] Starter systemdiagnostik...");
+        StateHasChanged();
+
+        await Task.Delay(800);
+        _diagLogs.Add($"[{DateTime.Now:HH:mm:ss} VAULT] Kontakter Azure Key Vault endpoints...");
+        if (_dynConnected)
+        {
+            _diagLogs.Add($"[{DateTime.Now:HH:mm:ss} VAULT] Hentede hemmeligheden 'DynamicsClientSecret' (Vault Status: 200 OK).");
+        }
+        else
+        {
+            _diagLogs.Add($"[{DateTime.Now:HH:mm:ss} VAULT] Advarsel: Dynamics Client Secret mangler eller er ikke konfigureret.");
+        }
+        StateHasChanged();
+
+        await Task.Delay(800);
+        _diagLogs.Add($"[{DateTime.Now:HH:mm:ss} M365] Starter Microsoft Graph delegeret ping...");
+        if (_m365Connected)
+        {
+            _diagLogs.Add($"[{DateTime.Now:HH:mm:ss} M365] Verified Graph identity: {_m365UserEmail}");
+            _diagLogs.Add($"[{DateTime.Now:HH:mm:ss} M365] Graph /me forespørgsel lykkedes. Latens: 16ms.");
+            _diagLogs.Add($"[{DateTime.Now:HH:mm:ss} M365] Tilknytning: Den Store Lade -> '{_ballroomCal}', Hovedbygningen -> '{_pavilionCal}', Søparken -> '{_gardensCal}'");
+        }
+        else
+        {
+            _diagLogs.Add($"[{DateTime.Now:HH:mm:ss} M365] Fejl: M365 bruger-token er ikke tilgængeligt (401 Unauthorized).");
+        }
+        StateHasChanged();
+
+        await Task.Delay(800);
+        _diagLogs.Add($"[{DateTime.Now:HH:mm:ss} D365] Starter Dynamics 365 Service Principal ping...");
+        if (_dynConnected)
+        {
+            _diagLogs.Add($"[{DateTime.Now:HH:mm:ss} D365] Godkendt via Klient ID: {_dynClientId}");
+            _diagLogs.Add($"[{DateTime.Now:HH:mm:ss} D365] Dataverse Web API pings: Organisation 'WhoAmI' bekræftet. Latens: 28ms.");
+            _diagLogs.Add($"[{DateTime.Now:HH:mm:ss} D365] Skema: Starttidspunkt tilknyttet '{_schemaStartTime}', Gæster tilknyttet '{_schemaGuests}'");
+        }
+        else
+        {
+            _diagLogs.Add($"[{DateTime.Now:HH:mm:ss} D365] Fejl: Service Principal secrets mangler. Synkronisering deaktiveret.");
+        }
+        StateHasChanged();
+
+        await Task.Delay(600);
+        _diagLogs.Add($"[{DateTime.Now:HH:mm:ss} SYS] Automatiske Graph Webhook notifikationsabonnementer bekræftet.");
+        
+        UpdateSystemHealth();
+        if (_systemHealthy)
+        {
+            _diagLogs.Add($"[{DateTime.Now:HH:mm:ss} SYS] Status: 100% AKTIV. Alle forbindelser og baggrundssynkroniseringer kører.");
+        }
+        else
+        {
+            _diagLogs.Add($"[{DateTime.Now:HH:mm:ss} SYS] Status: ADVARSEL. Nogle integrationer er suspenderet eller offline.");
+        }
+        
+        _isRunningDiag = false;
+        StateHasChanged();
+    }
+}

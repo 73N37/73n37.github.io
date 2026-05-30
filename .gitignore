@@ -1,0 +1,38 @@
+# .gitignore for AIDA-M365 & Engestofte Gods project
+
+# .NET / C# build outputs
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio / VS Code
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# System & Agent State Caches
+.antigravity/
+.gemini/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Python virtual env and cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.venv
+env/
+venv/
+ENV/

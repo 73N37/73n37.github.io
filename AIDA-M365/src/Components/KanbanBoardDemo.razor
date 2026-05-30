@@ -1,0 +1,421 @@
+@page "/kanban-demo"
+@using AIDA.M365.Models
+@using Microsoft.AspNetCore.Components
+@using MudBlazor
+
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-6" Style="background: transparent;">
+    <MudStack Spacing="6">
+        
+        <!-- Header Command Center Banner with responsive gradient and text styling -->
+        <MudPaper Class="pa-6 rounded-lg" Elevation="4" Style="background: linear-gradient(135deg, #070A13 0%, #10B981 100%); color: white; border: 1px solid rgba(255,255,255,0.05);">
+            <MudGrid AlignItems="AlignItems.Center">
+                <MudItem xs="12" md="8">
+                    <MudStack Spacing="1">
+                        <MudText Typo="Typo.h3" Class="brand-text font-weight-bold" Style="letter-spacing: -1px; color: #FAF9F6;">Gods Styringstavle & Afvikling</MudText>
+                        <MudText Typo="Typo.subtitle1" Style="color: #E2E8F0; font-weight: 300;">
+                            Strategisk selskabsstyring til afvikling af bryllupper, konferencer og private fester på Engestofte Gods.
+                        </MudText>
+                    </MudStack>
+                </MudItem>
+                <MudItem xs="12" md="4" Class="d-flex justify-md-end justify-start">
+                    <MudStack Row="true" Spacing="2">
+                        <MudButton Variant="Variant.Filled" 
+                                   Color="Color.Secondary" 
+                                   StartIcon="@Icons.Material.Filled.Add"
+                                   OnClick="OpenCreateSectionDialogAsync"
+                                   Style="border-radius: 8px; font-weight: 600; padding: 10px 20px;">
+                            Tilføj Ny Begivenhed
+                        </MudButton>
+                    </MudStack>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+
+        <!-- KPI Metrics Grid -->
+        <MudGrid>
+            <!-- KPI 1: Active Bookings -->
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="pa-4 rounded-lg glass-panel" Elevation="2" Outlined="true">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                        <MudStack Spacing="0">
+                            <MudText Typo="Typo.caption" Class="text-muted font-weight-bold" Style="letter-spacing: 0.5px;">AKTIVE SELSKABER</MudText>
+                            <MudText Typo="Typo.h4" Class="font-weight-bold">@_cards.Count Selskaber</MudText>
+                        </MudStack>
+                        <MudAvatar Color="Color.Primary" Variant="Variant.Filled" Size="Size.Medium" Style="border-radius: 8px;">
+                            <MudIcon Icon="@Icons.Material.Filled.Event" />
+                        </MudAvatar>
+                    </MudStack>
+                    <MudText Typo="Typo.caption" Color="Color.Success" Class="d-flex align-center mt-2 font-weight-bold">
+                        <MudIcon Icon="@Icons.Material.Filled.TrendingUp" Size="Size.Small" Class="mr-1" />
+                        +1 Forespørgsel Afventer
+                    </MudText>
+                </MudPaper>
+            </MudItem>
+
+            <!-- KPI 2: Estimated Revenue -->
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="pa-4 rounded-lg glass-panel" Elevation="2" Outlined="true">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                        <MudStack Spacing="0">
+                            <MudText Typo="Typo.caption" Class="text-muted font-weight-bold" Style="letter-spacing: 0.5px;">FORVENTET OMSÆTNING</MudText>
+                            <MudText Typo="Typo.h4" Class="font-weight-bold text-success">@CalculateTotalRevenue()</MudText>
+                        </MudStack>
+                        <MudAvatar Color="Color.Secondary" Variant="Variant.Filled" Size="Size.Medium" Style="border-radius: 8px;">
+                            <MudIcon Icon="@Icons.Material.Filled.AttachMoney" />
+                        </MudAvatar>
+                    </MudStack>
+                    <MudText Typo="Typo.caption" Class="text-muted d-flex align-center mt-2">
+                        Baseret på gæstepakker & forplejning
+                    </MudText>
+                </MudPaper>
+            </MudItem>
+
+            <!-- KPI 3: Total Guests -->
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="pa-4 rounded-lg glass-panel" Elevation="2" Outlined="true">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                        <MudStack Spacing="0">
+                            <MudText Typo="Typo.caption" Class="text-muted font-weight-bold" Style="letter-spacing: 0.5px;">FORVENTEDE GÆSTER I ALT</MudText>
+                            <MudText Typo="Typo.h4" Class="font-weight-bold">@_cards.Sum(c => c.GuestCount) Gæster</MudText>
+                        </MudStack>
+                        <MudAvatar Color="Color.Info" Variant="Variant.Filled" Size="Size.Medium" Style="border-radius: 8px;">
+                            <MudIcon Icon="@Icons.Material.Filled.People" />
+                        </MudAvatar>
+                    </MudStack>
+                    <MudText Typo="Typo.caption" Class="text-muted d-flex align-center mt-2">
+                        Belægning for lade & hovedbygning
+                    </MudText>
+                </MudPaper>
+            </MudItem>
+
+            <!-- KPI 4: Synchronisation Hub -->
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="pa-4 rounded-lg glass-panel" Elevation="2" Outlined="true">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                        <MudStack Spacing="0">
+                            <MudText Typo="Typo.caption" Class="text-muted font-weight-bold" Style="letter-spacing: 0.5px;">INTEGRATIONSBROER</MudText>
+                            <MudText Typo="Typo.h4" Class="font-weight-bold text-success">FORBUNDET</MudText>
+                        </MudStack>
+                        <MudAvatar Color="Color.Success" Variant="Variant.Filled" Size="Size.Medium" Style="border-radius: 8px;">
+                            <MudIcon Icon="@Icons.Material.Filled.CloudQueue" />
+                        </MudAvatar>
+                    </MudStack>
+                    <MudText Typo="Typo.caption" Color="Color.Success" Class="d-flex align-center mt-2 font-weight-bold">
+                        <span class="pulse-indicator mr-2"></span>
+                        Graph & Gods synkronisering aktiv
+                    </MudText>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+
+        <!-- Main Alert Zone -->
+        @if (!string.IsNullOrWhiteSpace(_lastUpdatedMessage))
+        {
+            <MudAlert Severity="Severity.Success" Dense="true" Variant="Variant.Filled" Elevation="2" Style="border-radius: 8px; font-weight: 500;">
+                @_lastUpdatedMessage
+            </MudAlert>
+        }
+
+        <!-- Kanban Board Component -->
+        <KanbanBoard Sections="_sections" Cards="_cards" CardUpdated="OnCardUpdatedAsync" SectionDeleted="OnSectionDeletedAsync" />
+    </MudStack>
+</MudContainer>
+
+<MudDialog @bind-IsVisible="_showCreateSectionDialog" Options="new DialogOptions { FullWidth = true, MaxWidth = MaxWidth.Small }">
+    <TitleContent>
+        <MudText Typo="Typo.h6" Class="font-weight-bold">Opret Nyt Selskabsstadie</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudStack Spacing="3">
+            <MudTextField @bind-Value="_newSectionTitle"
+                          Label="Titel"
+                          Placeholder="f.eks. Reserveret, Depositum Betalt"
+                          FullWidth="true"
+                          Variant="Variant.Outlined" />
+            
+            <MudNumericField @bind-Value="_dayOffsetFromToday"
+                             Label="Dato Offset (0 = i dag, 1 = i morgen)"
+                             Min="-7"
+                             Max="7"
+                             FullWidth="true"
+                             Variant="Variant.Outlined" />
+            
+            <MudNumericField @bind-Value="_startHourUtc"
+                             Label="Starttime (UTC 0-23)"
+                             Min="0"
+                             Max="23"
+                             FullWidth="true"
+                             Variant="Variant.Outlined" />
+            
+            <MudNumericField @bind-Value="_startMinuteUtc"
+                             Label="Startminut (0-59)"
+                             Min="0"
+                             Max="59"
+                             FullWidth="true"
+                             Variant="Variant.Outlined" />
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="() => _showCreateSectionDialog = false" Style="border-radius: 8px;">Annuller</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="CreateSectionAsync" Style="border-radius: 8px; font-weight: bold;">Opret</MudButton>
+    </DialogActions>
+</MudDialog>
+
+<style>
+    .pulse-indicator {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: var(--mud-palette-success);
+        box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
+        animation: pulse 1.5s infinite;
+        display: inline-block;
+    }
+
+    @@keyframes pulse {
+        0% {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
+        }
+        70% {
+            transform: scale(1);
+            box-shadow: 0 0 0 6px rgba(76, 175, 80, 0);
+        }
+        100% {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
+        }
+    }
+</style>
+
+@code {
+    private readonly List<KanbanSectionDefinition> _sections =
+    [
+        new()
+        {
+            Key = "inquiry",
+            Title = "Henvendelser",
+            DayOffsetFromTodayUtc = 2,
+            StartHourUtc = 9,
+            StartMinuteUtc = 0
+        },
+        new()
+        {
+            Key = "quoted",
+            Title = "Sendte Tilbud",
+            DayOffsetFromTodayUtc = 1,
+            StartHourUtc = 10,
+            StartMinuteUtc = 0
+        },
+        new()
+        {
+            Key = "confirmed",
+            Title = "Bekræftede Bookinger",
+            DayOffsetFromTodayUtc = 0,
+            StartHourUtc = 11,
+            StartMinuteUtc = 0
+        },
+        new()
+        {
+            Key = "preparation",
+            Title = "Planlægning",
+            DayOffsetFromTodayUtc = 0,
+            StartHourUtc = 8,
+            StartMinuteUtc = 0
+        },
+        new()
+        {
+            Key = "active",
+            Title = "Afvikling",
+            DayOffsetFromTodayUtc = 0,
+            StartHourUtc = 14,
+            StartMinuteUtc = 0
+        },
+        new()
+        {
+            Key = "completed",
+            Title = "Afsluttet",
+            DayOffsetFromTodayUtc = 0,
+            StartHourUtc = 18,
+            StartMinuteUtc = 0
+        }
+    ];
+
+    private readonly List<KanbanEventCard> _cards = [];
+
+    private string? _lastUpdatedMessage;
+
+    // Dialog state for creating new sections
+    private bool _showCreateSectionDialog;
+    private string? _newSectionTitle;
+    private int _dayOffsetFromToday;
+    private int _startHourUtc;
+    private int _startMinuteUtc;
+
+    protected override void OnInitialized()
+    {
+        var todayUtc = DateTimeOffset.UtcNow.Date;
+
+        _cards.AddRange(
+        [
+            new()
+            {
+                GraphEventId = "demo-event-001",
+                MetadataId = Guid.NewGuid(),
+                Subject = "Kensington Bryllup i Den Store Lade",
+                BodyContent = "Et eksklusivt gods-bryllup med fuld forplejning, blomsterdekorationer i Den Store Lade og velkomstchampagne i Søparken.",
+                ColorHex = "#D4AF37", // Elegant Gold for Wedding Bookings
+                Priority = "High",
+                SectionKey = "confirmed",
+                StartUtc = todayUtc.AddHours(11),
+                EndUtc = todayUtc.AddHours(18),
+                EventSubtype = "Bryllup",
+                GuestCount = 120,
+                AssignedCoordinator = "Sarah Jenkins",
+                EstateArea = "Den Store Lade",
+                CateringOption = "Gourmet Selskabsmenu",
+                EconomicInvoiceNumber = 104052,
+                EconomicPaymentLink = "https://payment.e-conomic.com/invoice/104052/pay?token=demo_token_johnson"
+            },
+            new()
+            {
+                GraphEventId = "demo-event-002",
+                MetadataId = Guid.NewGuid(),
+                Subject = "Sterling Konference i Hovedbygningen",
+                BodyContent = "Dagsmøde og konference i Hovedbygningen for Manor Holdings. Kræver AV-opsætning og konference-dagsmenu.",
+                ColorHex = "#10B981", // Emerald Green for Birthday Parties
+                Priority = "Normal",
+                SectionKey = "preparation",
+                StartUtc = todayUtc.AddHours(8),
+                EndUtc = todayUtc.AddHours(14),
+                EventSubtype = "Konference",
+                GuestCount = 80,
+                AssignedCoordinator = "Michael Chang",
+                EstateArea = "Hovedbygningen",
+                CateringOption = "Konference-dagsmenu"
+            },
+            new()
+            {
+                GraphEventId = "demo-event-003",
+                MetadataId = Guid.NewGuid(),
+                Subject = "Midsommerfest i Søparken Henvendelse",
+                BodyContent = "Forespørgsel på leje af herregårdshaven (Søparken) og Hovedbygningen. Kræver formelt tilbud med pakkeopstilling og kapacitetstjek.",
+                ColorHex = "#D4AF37", // Elegant Gold for Weddings
+                Priority = "High",
+                SectionKey = "inquiry",
+                StartUtc = todayUtc.AddDays(2).AddHours(9),
+                EndUtc = todayUtc.AddDays(2).AddHours(15),
+                EventSubtype = "Bryllup",
+                GuestCount = 200,
+                AssignedCoordinator = "Sarah Jenkins",
+                EstateArea = "Søparken",
+                CateringOption = "Brunch & Champagne"
+            },
+            new()
+            {
+                GraphEventId = "event-fail", // Dragging this triggers the demo failure and optimistic rollback!
+                MetadataId = Guid.NewGuid(),
+                Subject = "Overlappende Jagtselskab [Simuleret Fejl]",
+                BodyContent = "Dette arrangement demonstrerer automatisk tilbagerulning i systemet, hvis synkronisering med Microsoft 365 fejler.",
+                ColorHex = "#EF4444", // High Contrast Red
+                Priority = "High",
+                SectionKey = "inquiry",
+                StartUtc = todayUtc.AddDays(2).AddHours(10),
+                EndUtc = todayUtc.AddDays(2).AddHours(13),
+                EventSubtype = "Jagt & Event",
+                GuestCount = 50,
+                AssignedCoordinator = "Michael Chang",
+                EstateArea = "Hovedbygningen",
+                CateringOption = "Gourmet Selskabsmenu"
+            }
+        ]);
+    }
+
+    private string CalculateTotalRevenue()
+    {
+        double revenue = 0;
+        foreach (var card in _cards)
+        {
+            if (card.GraphEventId == "event-fail") continue; // Exclude mock error card
+            double basePrice = 12000;
+            if (card.EventSubtype == "Wedding" || card.EventSubtype == "Bryllup") basePrice = 35000;
+            else if (card.EventSubtype == "Birthday" || card.EventSubtype == "Privat Fest") basePrice = 18000;
+            else if (card.EventSubtype == "Conference" || card.EventSubtype == "Konference") basePrice = 15000;
+            else if (card.EventSubtype == "Jagt & Event") basePrice = 25000;
+
+            double perGuestPrice = 450;
+            if (card.CateringOption == "Fine Dining" || card.CateringOption == "Gourmet Selskabsmenu") perGuestPrice = 1250;
+            else if (card.CateringOption == "Buffet & Mocktails" || card.CateringOption == "Konference-dagsmenu") perGuestPrice = 650;
+            else if (card.CateringOption == "Champagne Brunch" || card.CateringOption == "Brunch & Champagne") perGuestPrice = 850;
+
+            revenue += basePrice + (card.GuestCount * perGuestPrice);
+        }
+        return $"{revenue:N0} DKK";
+    }
+
+    private Task OpenCreateSectionDialogAsync()
+    {
+        _newSectionTitle = null;
+        _dayOffsetFromToday = 0;
+        _startHourUtc = 9;
+        _startMinuteUtc = 0;
+        
+        _showCreateSectionDialog = true;
+        return Task.CompletedTask;
+    }
+
+    private Task CreateSectionAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newSectionTitle))
+        {
+            return Task.CompletedTask;
+        }
+
+        var key = _newSectionTitle.ToLowerInvariant().Replace(" ", "-");
+        
+        if (_sections.Any(s => s.Key == key))
+        {
+            key = $"{key}-{DateTime.Now.Ticks}";
+        }
+
+        var newSection = new KanbanSectionDefinition
+        {
+            Key = key,
+            Title = _newSectionTitle,
+            DayOffsetFromTodayUtc = _dayOffsetFromToday,
+            StartHourUtc = _startHourUtc,
+            StartMinuteUtc = _startMinuteUtc
+        };
+
+        _sections.Add(newSection);
+        _lastUpdatedMessage = $"Oprettede ny kolonne: {newSection.Title}";
+        _showCreateSectionDialog = false;
+        StateHasChanged();
+
+        return Task.CompletedTask;
+    }
+
+    private Task OnCardUpdatedAsync(KanbanEventCard card)
+    {
+        _lastUpdatedMessage =
+            $"[Synkronisering] Gen-synkroniserede '{card.Subject}' via MS Graph. Ny tid: {card.StartUtc.ToLocalTime():g} i kolonnen '{card.SectionKey}'.";
+
+        return Task.CompletedTask;
+    }
+
+    private Task OnSectionDeletedAsync(KanbanSectionDefinition section)
+    {
+        var cardsInDeletedSection = _cards.Where(c => c.SectionKey == section.Key).ToList();
+        foreach (var card in cardsInDeletedSection)
+        {
+            _cards.Remove(card);
+        }
+
+        _sections.Remove(section);
+        _lastUpdatedMessage = $"Slettede kolonnen: {section.Title}";
+        StateHasChanged();
+
+        return Task.CompletedTask;
+    }
+    }
+}

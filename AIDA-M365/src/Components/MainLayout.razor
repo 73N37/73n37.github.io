@@ -1,0 +1,112 @@
+@inherits LayoutComponentBase
+@implements IDisposable
+@inject AIDA.M365.Services.IntegrationStateContainer StateContainer
+@inject NavigationManager NavigationManager
+
+<MudThemeProvider Theme="_estateTheme" @ref="_themeProvider" @bind-IsDarkMode="_isDarkMode" />
+
+<MudLayout Class="@(_isDarkMode ? "dark-mode" : "")" Style="@(GetLayoutStyle())">
+    <MudAppBar Elevation="2" Style="@(GetAppBarStyle())">
+        <!-- Premium Brand Typography -->
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+            <MudIcon Icon="@Icons.Material.Filled.Castle" Style="color: #D4AF37; font-size: 2.2rem;" />
+            <MudText Typo="Typo.h5" Class="brand-text font-weight-bold" Style="letter-spacing: -0.5px;">
+                AIDA Estate <span style="color: #D4AF37; font-weight: 400; font-family: 'Playfair Display', serif; font-style: italic;">Command</span>
+            </MudText>
+        </MudStack>
+        
+        <MudSpacer />
+        
+        <!-- Navigation Buttons with dynamic highlight -->
+        <MudStack Row="true" Spacing="1" Class="d-none d-md-flex">
+            <MudButton Variant="Variant.Text" Style="color: white; font-weight: 500; border-radius: 8px;" Class="mx-1" Href="/kanban-demo">Styringstavle</MudButton>
+            <MudButton Variant="Variant.Text" Style="color: white; font-weight: 500; border-radius: 8px;" Class="mx-1" Href="/upcoming-events">Godskalender</MudButton>
+            <MudButton Variant="Variant.Text" Style="color: white; font-weight: 500; border-radius: 8px;" Class="mx-1" Href="/connect">Integrationscenter</MudButton>
+        </MudStack>
+
+    </MudAppBar>
+    
+    <MudMainContent>
+        <!-- Gold System Interrupted Re-Authentication Warning Banner -->
+        @if (!StateContainer.IsSystemHealthy)
+        {
+            <div style="background-color: #D4AF37; color: #1E293B; font-weight: 600; padding: 12px; text-align: center; font-size: 0.88rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05);" class="d-flex align-center justify-center gap-2">
+                <MudIcon Icon="@Icons.Material.Filled.Warning" Size="Size.Small" Style="color: #1E293B;" />
+                <span>Forbindelsen til Microsoft 365 er afbrudt. Synkronisering af kalenderen i baggrunden er midlertidigt sat på pause.</span>
+                <MudButton Variant="Variant.Filled" Size="Size.Small" Style="background-color: #1E293B; color: white; border-radius: 4px; font-weight: bold;" Href="/connect" Class="ml-2">
+                    Gendan Forbindelse
+                </MudButton>
+            </div>
+        }
+        
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="my-4">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private MudThemeProvider? _themeProvider;
+    private bool _isDarkMode = false; // Exclusively light cream-linen/gold style
+
+    private readonly MudTheme _estateTheme = new()
+    {
+        Palette = new PaletteLight()
+        {
+            Primary = "#0D9488", // Soft Forest Emerald
+            Secondary = "#C5A880", // Refined Champagne
+            Background = "#FAF9F6", // Pristine Snow
+            Surface = "#FFFFFF",
+            AppbarBackground = "#1E293B", // Deep Navy Slate Appbar
+            AppbarText = "#FAF9F6",
+            TextPrimary = "#1E293B",
+            TextSecondary = "#64748B",
+            BackgroundGrey = "#F1F5F9",
+            DrawerBackground = "#FFFFFF",
+            ActionDefault = "#64748B"
+        },
+        PaletteDark = new PaletteDark()
+        {
+            Primary = "#10B981", // Vibrant Emerald
+            Secondary = "#D4AF37", // Golden Amber
+            Background = "#0B0F19", // Deep Obsidian Black
+            Surface = "#111827", // Charcoal slate
+            AppbarBackground = "#070A13", // Obsidian Appbar
+            AppbarText = "#FAF9F6",
+            TextPrimary = "#FAF9F6", // Frost white text
+            TextSecondary = "#9CA3AF",
+            BackgroundGrey = "#1F2937",
+            DrawerBackground = "#111827",
+            ActionDefault = "#9CA3AF"
+        }
+    };
+
+    protected override void OnInitialized()
+    {
+        StateContainer.OnChange += StateHasChanged;
+    }
+
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        return Task.CompletedTask;
+    }
+
+    private string GetLayoutStyle()
+    {
+        return _isDarkMode 
+            ? "background-color: #0B0F19; min-height: 100vh; transition: background-color 0.3s ease;" 
+            : "background-color: #FAF9F6; min-height: 100vh; transition: background-color 0.3s ease;";
+    }
+
+    private string GetAppBarStyle()
+    {
+        return _isDarkMode
+            ? "background-color: #070A13; color: #FAF9F6; border-bottom: 1px solid rgba(255,255,255,0.05);"
+            : "background-color: #1E293B; color: #FAF9F6; border-bottom: 1px solid rgba(0,0,0,0.05);";
+    }
+
+    public void Dispose()
+    {
+        StateContainer.OnChange -= StateHasChanged;
+    }
+}
