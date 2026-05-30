@@ -43,7 +43,7 @@ builder.Services.AddAidaKanbanServices();
 2. Register demo mode service in `Program.cs`:
 	- `builder.Services.AddAidaKanbanDemoServices();`
 3. Run the Blazor app.
-4. Open route `/kanban-demo`.
+4. Open route `/home`.
 5. Drag one card from any column to another.
 6. Confirm results:
 	- Card appears in the target column.
@@ -60,7 +60,7 @@ builder.Services.AddAidaKanbanServices();
 	- Signed-in user has calendar permission for event write (for example `Calendars.ReadWrite`).
 	- `GraphServiceClient` resolves from DI.
 3. Seed cards with real `GraphEventId` values from the signed-in user's calendar.
-4. Run the app and open `/kanban-demo`.
+4. Run the app and open `/home`.
 5. Drag a card to another column.
 6. Confirm results:
 	- Card moves in the UI.
