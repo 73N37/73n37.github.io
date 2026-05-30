@@ -18,10 +18,10 @@
         <MudSpacer />
         
         <!-- Navigation Buttons with dynamic highlight -->
-        <MudStack Row="true" Spacing="1" Class="d-none d-md-flex">
+        <MudStack Row="true" Spacing="1" Class="d-none d-md-flex" AlignItems="AlignItems.Center">
             <MudButton Variant="Variant.Text" Style="color: white; font-weight: 500; border-radius: 8px;" Class="mx-1" Href="/kanban-demo">Styringstavle</MudButton>
             <MudButton Variant="Variant.Text" Style="color: white; font-weight: 500; border-radius: 8px;" Class="mx-1" Href="/upcoming-events">Godskalender</MudButton>
-            <MudButton Variant="Variant.Text" Style="color: white; font-weight: 500; border-radius: 8px;" Class="mx-1" Href="/connect">Integrationscenter</MudButton>
+            <MudIconButton Icon="@Icons.Material.Filled.Settings" Href="/connect" Style="color: white; border-radius: 8px;" Class="mx-1" Title="Integrationscenter (Indstillinger)" />
         </MudStack>
 
     </MudAppBar>

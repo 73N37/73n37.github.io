@@ -17,7 +17,13 @@
                         </MudText>
                     </MudStack>
                 </MudItem>
-                <MudItem xs="12" md="4" Class="d-flex justify-md-end justify-start align-center">
+                <MudItem xs="12" md="4" Class="d-flex justify-md-end justify-start align-center gap-2">
+                    <MudButton Variant="Variant.Outlined" 
+                               Color="Color.Secondary" 
+                               OnClick="SimulateExamConnection"
+                               Style="border-color: #D4AF37; color: #D4AF37; border-radius: 8px; font-weight: bold;">
+                        Simuler Eksamens-forbindelse
+                    </MudButton>
                     <MudChip Size="Size.Medium" 
                              Color="@(_systemHealthy ? Color.Success : Color.Warning)" 
                              Variant="Variant.Filled"
@@ -344,6 +350,24 @@
         _dynConnected = false;
         StateContainer.IsDynamicsConnected = false;
         _statusMessage = "[CRM Link] Dynamics 365 legitimationsoplysninger slettet fra Vault.";
+        UpdateSystemHealth();
+    }
+
+    private void SimulateExamConnection()
+    {
+        _m365Connected = true;
+        StateContainer.IsM365Connected = true;
+        _m365ClientId = "71a2a4b8-db56-42d7-9878-8c041b492404";
+        _m365TenantId = "f8c8d5a2-94af-42d7-9978-8c041b492404";
+        _m365UserEmail = "koordinator@engestofte.dk";
+
+        _dynConnected = true;
+        StateContainer.IsDynamicsConnected = true;
+        _dynUrl = "https://engestofte.crm4.dynamics.com";
+        _dynClientId = "c3f8d2b4-e4a8-422e-9907-8c041b492404";
+        _dynSecret = "royalSecretVaultValueKeyStore";
+
+        _statusMessage = "[Eksamen] Fuld succes-simulering aktiveret! Microsoft 365 og Dynamics 365 er nu forbundet.";
         UpdateSystemHealth();
     }
 
