@@ -32,6 +32,8 @@ public sealed class KanbanEventCard
 
     public IReadOnlyList<string> ActionItems { get; set; } = [];
 
+    public List<Subevent> Subevents { get; set; } = [];
+
     // Estate booking custom metadata properties for Proof of Concept
     public string? EventSubtype { get; set; } // e.g. "Wedding", "Birthday"
     

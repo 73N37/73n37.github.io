@@ -59,7 +59,7 @@ public sealed class DynamicsEventLinkServiceTests
     [InlineData("account", "accounts")]
     [InlineData("opportunity", "opportunities")]
     [InlineData("lead", "leads")]
-    [InlineData("custom_entity", "custom_entitys")]
+    [InlineData("custom_entity", "custom_entities")]
     public async Task UpdateLinkedEventAsync_ShouldSendPatchRequestToCorrectUri_ForVariousLogicalNames(
         string logicalName,
         string expectedEntitySetName)
@@ -109,14 +109,22 @@ public sealed class DynamicsEventLinkServiceTests
         var update = new DynamicsEventUpdate("lead", "lead-456", "graph-evt-222", "preparation", start, end);
 
         HttpRequestMessage? interceptedRequest = null;
+        string? payload = null;
 
         _handlerMock.Protected()
             .Setup<Task<HttpResponseMessage>>(
                 "SendAsync",
                 ItExpr.IsAny<HttpRequestMessage>(),
                 ItExpr.IsAny<CancellationToken>())
-            .Callback<HttpRequestMessage, CancellationToken>((req, ct) => interceptedRequest = req)
-            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.NoContent)) // Standard Dataverse PATCH response
+            .Returns<HttpRequestMessage, CancellationToken>(async (req, ct) =>
+            {
+                interceptedRequest = req;
+                if (req.Content != null)
+                {
+                    payload = await req.Content.ReadAsStringAsync(ct);
+                }
+                return new HttpResponseMessage(HttpStatusCode.NoContent);
+            })
             .Verifiable();
 
         // Act
@@ -133,7 +141,7 @@ public sealed class DynamicsEventLinkServiceTests
         interceptedRequest!.Method.Should().Be(HttpMethod.Patch);
         interceptedRequest.Content.Should().NotBeNull();
 
-        var payload = await interceptedRequest.Content!.ReadAsStringAsync();
+        payload.Should().NotBeNull();
         payload.Should().Contain("graph-evt-222");
         payload.Should().Contain("preparation");
     }

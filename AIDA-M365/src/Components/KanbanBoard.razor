@@ -191,7 +191,7 @@
 </MudPaper>
 
 <!-- EDIT EVENT INQUIRY DETAILS DRAWER -->
-<MudDrawer Anchor="Anchor.Right" @bind-Open="_editDrawerOpen" Width="450px" Elevation="16" Variant="DrawerVariant.Temporary" Style="border-radius: 16px 0 0 16px;">
+<MudDrawer Anchor="Anchor.Right" @bind-Open="_editDrawerOpen" Width="450px" Elevation="16" Variant="DrawerVariant.Temporary" Style="border-radius: 16px 0 0 16px; overflow-y: auto;">
     <MudDrawerHeader Style="border-bottom: 1px solid rgba(255,255,255,0.06); background: #070A13; color: white; padding: 20px;">
         <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
             <MudIcon Icon="@Icons.Material.Filled.Edit" Style="color: #D4AF37; font-size: 1.8rem;" />
@@ -229,6 +229,67 @@
                 </MudSelect>
 
                 <MudTextField @bind-Value="_editingCoordinator" Label="Ansvarlig Koordinator" Variant="Variant.Outlined" Margin="Margin.Dense" />
+
+                <!-- Timetable / Subevents Section inside Kanban Edit Drawer -->
+                <MudPaper Class="pa-4 rounded-lg" Outlined="true" Style="background-color: white;">
+                    <MudText Typo="Typo.subtitle2" Class="font-weight-bold mb-2" Style="color: #2C3E50;">Dagens Program (Del-begivenheder)</MudText>
+                    
+                    @if (_editingCard.Subevents == null || _editingCard.Subevents.Count == 0)
+                    {
+                        <MudText Typo="Typo.caption" Class="text-muted d-block mb-2">Ingen del-begivenheder planlagt endnu.</MudText>
+                    }
+                    else
+                    {
+                        <MudStack Spacing="2" Class="mb-3">
+                            @foreach (var sub in _editingCard.Subevents.OrderBy(s => s.StartTime))
+                            {
+                                <MudPaper Class="pa-3 rounded-lg" Outlined="true" Style="background-color: #FAF9F6; border-left: 4px solid #D4AF37;">
+                                    <MudStack Row="true" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+                                        <MudStack Spacing="0">
+                                            <MudText Typo="Typo.body2" Class="font-weight-bold" Style="color: #2C3E50;">@sub.Title</MudText>
+                                            <MudText Typo="Typo.caption" Class="text-muted">
+                                                <MudIcon Icon="@Icons.Material.Filled.AccessTime" Size="Size.Small" Style="font-size: 0.8rem; vertical-align: middle; margin-right: 2px;" />
+                                                @sub.StartTime.ToString(@"hh\:mm") - @sub.EndTime.ToString(@"hh\:mm")
+                                                <MudIcon Icon="@Icons.Material.Filled.Place" Size="Size.Small" Style="font-size: 0.8rem; vertical-align: middle; margin-left: 6px; margin-right: 2px;" />
+                                                @sub.Location
+                                            </MudText>
+                                        </MudStack>
+                                        <MudStack Row="true" Spacing="1">
+                                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Color="Color.Primary" OnClick="() => StartEditSubevent(sub)" />
+                                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" OnClick="() => DeleteSubevent(sub)" />
+                                        </MudStack>
+                                    </MudStack>
+                                </MudPaper>
+                            }
+                        </MudStack>
+                    }
+
+                    <MudDivider Class="my-3" />
+                    <MudText Typo="Typo.caption" Class="font-weight-bold d-block mb-1" Style="color: #7F8C8D;">TILFØJ / REDIGER AKTIVITET</MudText>
+                    <MudStack Spacing="2">
+                        <MudTextField @bind-Value="_subTitle" Label="Titel på aktivitet" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                        <MudGrid Spacing="2">
+                            <MudItem xs="6">
+                                <MudTimePicker @bind-Time="_subStart" Label="Starttid" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            </MudItem>
+                            <MudItem xs="6">
+                                <MudTimePicker @bind-Time="_subEnd" Label="Sluttid" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            </MudItem>
+                        </MudGrid>
+                        <MudSelect @bind-Value="_subLocation" Label="Lokation" Variant="Variant.Outlined" Margin="Margin.Dense">
+                            <MudSelectItem Value="@("Den Store Lade")">Den Store Lade</MudSelectItem>
+                            <MudSelectItem Value="@("Hovedbygningen")">Hovedbygningen</MudSelectItem>
+                            <MudSelectItem Value="@("Søparken")">Søparken</MudSelectItem>
+                        </MudSelect>
+                        <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="SaveSubevent" Style="background-color: #D4AF37; color: white; border-radius: 8px; font-weight: bold;">
+                            @(_editingSubeventId.HasValue ? "Opdater Aktivitet" : "Tilføj Aktivitet")
+                        </MudButton>
+                        @if (_editingSubeventId.HasValue)
+                        {
+                            <MudButton Variant="Variant.Outlined" OnClick="CancelEditSubevent" Style="border-radius: 8px;" Class="mt-1">Annuller redigering</MudButton>
+                        }
+                    </MudStack>
+                </MudPaper>
 
                 <MudDivider Style="background: rgba(255,255,255,0.06);" />
 
@@ -317,6 +378,13 @@
     private int _editingGuests = 1;
     private string _editingCatering = string.Empty;
     private string _editingCoordinator = string.Empty;
+
+    // Inline Subevent variables inside Edit Drawer
+    private string _subTitle = string.Empty;
+    private TimeSpan? _subStart = new TimeSpan(12, 0, 0);
+    private TimeSpan? _subEnd = new TimeSpan(13, 0, 0);
+    private string _subLocation = "Den Store Lade";
+    private Guid? _editingSubeventId;
 
     // OpenAI Smart Summary Dialog variables
     private bool _showAiDialog;
@@ -491,6 +559,8 @@
         _editingCatering = card.CateringOption ?? "Fine Dining";
         _editingCoordinator = card.AssignedCoordinator ?? "";
         
+        CancelEditSubevent(); // Reset subevent form on open
+        
         _editDrawerOpen = true;
         StateHasChanged();
         return Task.CompletedTask;
@@ -500,6 +570,7 @@
     {
         _editDrawerOpen = false;
         _editingCard = null;
+        CancelEditSubevent(); // Reset subevent form on close
     }
 
     private async Task SaveEditDetailsAsync()
@@ -513,16 +584,103 @@
         _editingCard.CateringOption = _editingCatering;
         _editingCard.AssignedCoordinator = _editingCoordinator;
 
+        var savedCard = _editingCard;
+
         _editDrawerOpen = false;
         _editingCard = null;
+        CancelEditSubevent();
         
         Snackbar.Add("Selskabsoplysninger blev gemt i Gods-databasen.", Severity.Success);
 
         if (CardUpdated.HasDelegate)
         {
-            await CardUpdated.InvokeAsync(_editingCard);
+            await CardUpdated.InvokeAsync(savedCard);
         }
 
+        StateHasChanged();
+    }
+
+    private void StartEditSubevent(Subevent sub)
+    {
+        _editingSubeventId = sub.Id;
+        _subTitle = sub.Title;
+        _subStart = sub.StartTime;
+        _subEnd = sub.EndTime;
+        _subLocation = sub.Location;
+    }
+
+    private void CancelEditSubevent()
+    {
+        _editingSubeventId = null;
+        _subTitle = string.Empty;
+        _subStart = new TimeSpan(12, 0, 0);
+        _subEnd = new TimeSpan(13, 0, 0);
+        _subLocation = "Den Store Lade";
+    }
+
+    private void SaveSubevent()
+    {
+        if (_editingCard is null) return;
+
+        if (string.IsNullOrWhiteSpace(_subTitle))
+        {
+            Snackbar.Add("Aktivitetstitel skal udfyldes.", Severity.Error);
+            return;
+        }
+
+        if (!_subStart.HasValue || !_subEnd.HasValue)
+        {
+            Snackbar.Add("Start- og sluttid skal angives.", Severity.Error);
+            return;
+        }
+
+        if (_subEnd.Value <= _subStart.Value)
+        {
+            Snackbar.Add("Sluttid skal være efter starttid.", Severity.Error);
+            return;
+        }
+
+        if (_editingSubeventId.HasValue)
+        {
+            // Edit existing subevent
+            var sub = _editingCard.Subevents.FirstOrDefault(s => s.Id == _editingSubeventId.Value);
+            if (sub != null)
+            {
+                sub.Title = _subTitle;
+                sub.StartTime = _subStart.Value;
+                sub.EndTime = _subEnd.Value;
+                sub.Location = _subLocation;
+                Snackbar.Add($"Del-begivenheden '{_subTitle}' blev opdateret.", Severity.Success);
+            }
+        }
+        else
+        {
+            // Add new subevent
+            var newSub = new Subevent
+            {
+                Title = _subTitle,
+                StartTime = _subStart.Value,
+                EndTime = _subEnd.Value,
+                Location = _subLocation
+            };
+            if (_editingCard.Subevents == null)
+            {
+                _editingCard.Subevents = [];
+            }
+            _editingCard.Subevents.Add(newSub);
+            Snackbar.Add($"Del-begivenheden '{_subTitle}' blev tilføjet til programmet.", Severity.Success);
+        }
+
+        CancelEditSubevent();
+        StateHasChanged();
+    }
+
+    private void DeleteSubevent(Subevent sub)
+    {
+        if (_editingCard is null) return;
+
+        _editingCard.Subevents.Remove(sub);
+        Snackbar.Add($"Del-begivenheden '{sub.Title}' blev fjernet fra programmet.", Severity.Info);
         StateHasChanged();
     }
 
