@@ -29,12 +29,20 @@ jobs:
       # 4. Dynamically configure routing for GitHub Pages
       - name: Configure GitHub Pages Routing
         run: |
-          # Get repo name from repository info (e.g. "Godset")
+          # Get repo details from repository info
           REPO_NAME=$(echo "${{ github.repository }}" | cut -d '/' -f 2)
-          echo "Configuring index.html base href to: /$REPO_NAME/"
+          OWNER="${{ github.repository_owner }}"
+          USER_PAGE_NAME="$OWNER.github.io"
           
-          # Replace <base href="/" /> with <base href="/REPO_NAME/" /> in index.html
-          sed -i "s|<base href=\"/\" />|<base href=\"/$REPO_NAME/\" />|g" release/wwwroot/index.html
+          # Handle User Pages (root domain /) vs Project Pages (/repo-name/)
+          if [ "$REPO_NAME" = "$USER_PAGE_NAME" ]; then
+              BASE_HREF="/"
+          else
+              BASE_HREF="/$REPO_NAME/"
+          fi
+          
+          echo "Configuring index.html base href to: $BASE_HREF"
+          sed -i "s|<base href=\"/\" />|<base href=\"$BASE_HREF\" />|g" release/wwwroot/index.html
           
           # Create .nojekyll to prevent GitHub from blocking Blazor framework files starting with underscore
           touch release/wwwroot/.nojekyll
