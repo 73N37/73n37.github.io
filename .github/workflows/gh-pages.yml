@@ -32,10 +32,13 @@ jobs:
           # Get repo details from repository info
           REPO_NAME=$(echo "${{ github.repository }}" | cut -d '/' -f 2)
           OWNER="${{ github.repository_owner }}"
-          USER_PAGE_NAME="$OWNER.github.io"
+          
+          # Convert to lowercase to avoid case-sensitivity issues (e.g. 73N37 vs 73n37)
+          REPO_NAME_LOWER=$(echo "$REPO_NAME" | tr '[:upper:]' '[:lower:]')
+          USER_PAGE_NAME_LOWER=$(echo "$OWNER.github.io" | tr '[:upper:]' '[:lower:]')
           
           # Handle User Pages (root domain /) vs Project Pages (/repo-name/)
-          if [ "$REPO_NAME" = "$USER_PAGE_NAME" ]; then
+          if [ "$REPO_NAME_LOWER" = "$USER_PAGE_NAME_LOWER" ]; then
               BASE_HREF="/"
           else
               BASE_HREF="/$REPO_NAME/"
