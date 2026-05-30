@@ -22,9 +22,9 @@
                         <MudButton Variant="Variant.Filled" 
                                    Color="Color.Secondary" 
                                    StartIcon="@Icons.Material.Filled.Add"
-                                   OnClick="OpenCreateSectionDialogAsync"
+                                   OnClick="() => _isCreateDrawerOpen = true"
                                    Style="border-radius: 8px; font-weight: 600; padding: 10px 20px;">
-                            Tilføj Ny Begivenhed
+                            Opret Selskab
                         </MudButton>
                     </MudStack>
                 </MudItem>
@@ -161,6 +161,81 @@
     </DialogActions>
 </MudDialog>
 
+<!-- Opret Selskab Modal (Delt med Kalenderen) -->
+@if (_isCreateDrawerOpen)
+{
+    <div style="position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1300;" @onclick="() => _isCreateDrawerOpen = false"></div>
+    <MudPaper Elevation="8" Style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1301; width: 480px; max-width: calc(100vw - 32px); max-height: 90vh; overflow-y: auto; border-radius: 12px; background-color: #FAF9F6; font-family: 'Inter', sans-serif;">
+        <MudStack Class="pa-6" Spacing="4">
+            <MudStack Row="true" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+                <MudText Typo="Typo.h5" Class="font-weight-bold" Style="color: #2C3E50;">
+                    @(_isStaffView ? "Opret Selskab" : "Send Forespørgsel om Reservation")
+                </MudText>
+                <MudIconButton Icon="@Icons.Material.Filled.Close" Color="Color.Default" OnClick="() => _isCreateDrawerOpen = false" />
+            </MudStack>
+            <MudDivider />
+
+            <MudTextField @bind-Value="_newSubject"
+                          Label="@(_isStaffView ? "Selskabsnavn / Emne" : "Dit Navn / Selskabsnavn")"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Required="true" />
+
+            <MudDatePicker @bind-Date="_newDate"
+                           Label="Dato"
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense"
+                           Required="true"
+                           PickerVariant="PickerVariant.Static"
+                           Style="background-color: white; border-radius: 8px;" />
+
+            <MudGrid Spacing="2">
+                <MudItem xs="6">
+                    <MudTimePicker @bind-Time="_newStartTime" Label="Starttidspunkt" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudTimePicker @bind-Time="_newEndTime" Label="Sluttidspunkt" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true" />
+                </MudItem>
+            </MudGrid>
+
+            <MudSelect @bind-Value="_newArea" Label="Lokation på Engestofte Gods" Variant="Variant.Outlined" Margin="Margin.Dense">
+                <MudSelectItem Value="@("Den Store Lade")">Den Store Lade</MudSelectItem>
+                <MudSelectItem Value="@("Hovedbygningen")">Hovedbygningen</MudSelectItem>
+                <MudSelectItem Value="@("Søparken")">Søparken</MudSelectItem>
+            </MudSelect>
+
+            <MudSelect @bind-Value="_newSubtype" Label="Kategori" Variant="Variant.Outlined" Margin="Margin.Dense">
+                <MudSelectItem Value="@("Bryllup")">Bryllup</MudSelectItem>
+                <MudSelectItem Value="@("Konference")">Konference</MudSelectItem>
+                <MudSelectItem Value="@("Privat Fest")">Privat Fest</MudSelectItem>
+                <MudSelectItem Value="@("Jagt & Event")">Jagt & Event</MudSelectItem>
+            </MudSelect>
+
+            <MudNumericField @bind-Value="_newGuestCount" Label="Antal Gæster" Variant="Variant.Outlined" Margin="Margin.Dense" Min="1" />
+
+            <MudSelect @bind-Value="_newCatering" Label="Forplejning" Variant="Variant.Outlined" Margin="Margin.Dense">
+                <MudSelectItem Value="@("Gourmet Selskabsmenu")">Gourmet Selskabsmenu</MudSelectItem>
+                <MudSelectItem Value="@("Konference-dagsmenu")">Konference-dagsmenu</MudSelectItem>
+                <MudSelectItem Value="@("Brunch & Champagne")">Brunch & Champagne</MudSelectItem>
+            </MudSelect>
+
+            @if (_isStaffView)
+            {
+                <MudTextField @bind-Value="_newCoordinator" Label="Ansvarlig Koordinator" Variant="Variant.Outlined" Margin="Margin.Dense" />
+            }
+
+            <MudStack Row="true" Spacing="2" JustifyContent="JustifyContent.FlexEnd">
+                <MudButton Variant="Variant.Outlined" Color="Color.Default" OnClick="() => _isCreateDrawerOpen = false" Style="border-radius: 8px;">
+                    Annuller
+                </MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveNewReservation" Style="background-color: #2C3E50; color: white; border-radius: 8px; font-weight: bold;">
+                    @(_isStaffView ? "Gem Selskab" : "Send Forespørgselsmail")
+                </MudButton>
+            </MudStack>
+        </MudStack>
+    </MudPaper>
+}
+
 <style>
     .pulse-indicator {
         width: 8px;
@@ -251,6 +326,20 @@
     private int _dayOffsetFromToday;
     private int _startHourUtc;
     private int _startMinuteUtc;
+
+    // Opret Selskab Form State variables
+    private bool _isCreateDrawerOpen;
+    private bool _isStaffView = true;
+    
+    private string _newSubject = string.Empty;
+    private DateTime? _newDate = DateTime.Today;
+    private TimeSpan? _newStartTime = new TimeSpan(11, 0, 0);
+    private TimeSpan? _newEndTime = new TimeSpan(18, 0, 0);
+    private string _newArea = "Den Store Lade";
+    private string _newSubtype = "Bryllup";
+    private int _newGuestCount = 50;
+    private string _newCatering = "Gourmet Selskabsmenu";
+    private string _newCoordinator = "Sarah Jenkins";
 
     protected override void OnInitialized()
     {
@@ -431,6 +520,84 @@
         StateHasChanged();
 
         return Task.CompletedTask;
+    }
+
+    private void SaveNewReservation()
+    {
+        if (string.IsNullOrWhiteSpace(_newSubject))
+        {
+            _lastUpdatedMessage = "[Systemfejl] Selskabsnavn skal udfyldes.";
+            return;
+        }
+
+        if (!_newDate.HasValue || !_newStartTime.HasValue || !_newEndTime.HasValue)
+        {
+            _lastUpdatedMessage = "[Systemfejl] Dato, starttid og sluttid skal angives.";
+            return;
+        }
+
+        var startDateTime = _newDate.Value.Add(_newStartTime.Value);
+        var endDateTime = _newDate.Value.Add(_newEndTime.Value);
+
+        if (endDateTime <= startDateTime)
+        {
+            _lastUpdatedMessage = "[Systemfejl] Sluttidspunkt skal være efter starttidspunkt.";
+            return;
+        }
+
+        string targetSection = _isStaffView ? "confirmed" : "inquiry";
+        string targetPriority = "Normal";
+        string targetColor = "#10B981"; // default emerald
+        
+        if (string.Equals(_newSubtype, "Bryllup", StringComparison.OrdinalIgnoreCase))
+        {
+            targetColor = "#D4AF37"; // gold
+            targetPriority = "High";
+        }
+        else if (string.Equals(_newSubtype, "Jagt & Event", StringComparison.OrdinalIgnoreCase))
+        {
+            targetColor = "#EF4444"; // red
+            targetPriority = "High";
+        }
+
+        var newCard = new KanbanEventCard
+        {
+            GraphEventId = $"evt-{Guid.NewGuid()}",
+            MetadataId = Guid.NewGuid(),
+            Subject = _newSubject,
+            BodyContent = $"Nyt selskab oprettet direkte fra Godstavlen. Område: {_newArea}, Forplejning: {_newCatering}.",
+            ColorHex = targetColor,
+            Priority = targetPriority,
+            SectionKey = targetSection,
+            StartUtc = startDateTime,
+            EndUtc = endDateTime,
+            EventSubtype = _newSubtype,
+            GuestCount = _newGuestCount,
+            AssignedCoordinator = _isStaffView ? _newCoordinator : "Afventer godkendelse",
+            EstateArea = _newArea,
+            CateringOption = _newCatering
+        };
+
+        _cards.Add(newCard);
+
+        _isCreateDrawerOpen = false;
+        
+        // Reset form
+        _newSubject = string.Empty;
+        _newDate = DateTime.Today;
+        _newStartTime = new TimeSpan(11, 0, 0);
+        _newEndTime = new TimeSpan(18, 0, 0);
+        _newArea = "Den Store Lade";
+        _newSubtype = "Bryllup";
+        _newGuestCount = 50;
+        _newCatering = "Gourmet Selskabsmenu";
+        _newCoordinator = "Sarah Jenkins";
+
+        _lastUpdatedMessage = _isStaffView 
+            ? $"[Succes] Selskabet '{newCard.Subject}' blev oprettet og lagt i kolonnen '{newCard.SectionKey}'."
+            : $"[Succes] Forespørgsel om '{newCard.Subject}' blev indsendt til godkendelse.";
+            
+        StateHasChanged();
     }
     }
 }
