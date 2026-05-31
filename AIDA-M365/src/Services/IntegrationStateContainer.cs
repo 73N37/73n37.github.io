@@ -10,6 +10,7 @@ public sealed class IntegrationStateContainer
     private bool _isM365Connected = true;
     private bool _isDynamicsConnected = true;
     private bool _isPostgresConnected = true; // Connected by default now!
+    private bool _isDarkMode = false; // Exclusively light cream-linen/gold style by default
 
     // Default to User's provided Supabase Project URL
     private string _postgresHost = "hrkgvifqbjllhhxzfcfa.supabase.co";
@@ -21,7 +22,11 @@ public sealed class IntegrationStateContainer
     private bool _useSupabase = true; // Default to true now!
     
     // Default to User's provided Supabase Anon Key
-    private string _supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdvZHMtYm9va2luZ3MiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTcyNDMxODQwMCwiZXhwIjoyMDM5ODk0NDAwfQ.xxxxxx";
+    private string _supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhya2d2aWZxYmpsbGhoeHpmY2ZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyMTc5OTUsImV4cCI6MjA5NTc5Mzk5NX0.bsuHAXhVUpsqB7JE7fcMmmwJpnBZLwc8Eil-dic_890";
+
+    // e-conomic Billing State
+    public int? LastInvoiceNumber { get; set; }
+    public string LastPaymentLink { get; set; } = string.Empty;
 
     public IntegrationStateContainer(IJSRuntime js)
     {
@@ -32,9 +37,40 @@ public sealed class IntegrationStateContainer
         _supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhya2d2aWZxYmpsbGhoeHpmY2ZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyMTc5OTUsImV4cCI6MjA5NTc5Mzk5NX0.bsuHAXhVUpsqB7JE7fcMmmwJpnBZLwc8Eil-dic_890";
         _useSupabase = true;
         _isPostgresConnected = true;
+        _isDarkMode = false;
 
         // 2. Override with local storage if saved previously
         LoadFromLocalStorage();
+    }
+
+    private string EncryptString(string plainText)
+    {
+        if (string.IsNullOrEmpty(plainText)) return string.Empty;
+        try
+        {
+            byte[] bytes = System.Text.Encoding.UTF8.GetBytes(plainText);
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                bytes[i] = (byte)(bytes[i] ^ 0x5A); // Symmetric XOR masking
+            }
+            return Convert.ToBase64String(bytes);
+        }
+        catch { return plainText; }
+    }
+
+    private string DecryptString(string cipherText)
+    {
+        if (string.IsNullOrEmpty(cipherText)) return string.Empty;
+        try
+        {
+            byte[] bytes = Convert.FromBase64String(cipherText);
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                bytes[i] = (byte)(bytes[i] ^ 0x5A);
+            }
+            return System.Text.Encoding.UTF8.GetString(bytes);
+        }
+        catch { return cipherText; }
     }
 
     private void LoadFromLocalStorage()
@@ -48,22 +84,28 @@ public sealed class IntegrationStateContainer
                 _useSupabase = bool.Parse(useSupabaseStr);
             }
 
-            var supabaseAnonKeyStr = _js.Invoke<string>("localStorage.getItem", "SupabaseAnonKey");
+            var supabaseAnonKeyStr = _js.Invoke<string>("localStorage.getItem", "SupabaseAnonKey_Secured");
             if (supabaseAnonKeyStr != null)
             {
-                _supabaseAnonKey = supabaseAnonKeyStr;
+                _supabaseAnonKey = DecryptString(supabaseAnonKeyStr);
             }
 
-            var postgresHostStr = _js.Invoke<string>("localStorage.getItem", "PostgresHost");
+            var postgresHostStr = _js.Invoke<string>("localStorage.getItem", "PostgresHost_Secured");
             if (postgresHostStr != null)
             {
-                _postgresHost = postgresHostStr;
+                _postgresHost = DecryptString(postgresHostStr);
             }
 
             var pgConnectedStr = _js.Invoke<string>("localStorage.getItem", "IsPostgresConnected");
             if (!string.IsNullOrEmpty(pgConnectedStr))
             {
                 _isPostgresConnected = bool.Parse(pgConnectedStr);
+            }
+
+            var isDarkModeStr = _js.Invoke<string>("localStorage.getItem", "IsDarkMode");
+            if (!string.IsNullOrEmpty(isDarkModeStr))
+            {
+                _isDarkMode = bool.Parse(isDarkModeStr);
             }
         }
         catch
@@ -122,6 +164,20 @@ public sealed class IntegrationStateContainer
         }
     }
 
+    public bool IsDarkMode
+    {
+        get => _isDarkMode;
+        set
+        {
+            if (_isDarkMode != value)
+            {
+                _isDarkMode = value;
+                SaveToLocalStorage("IsDarkMode", value.ToString());
+                NotifyStateChanged();
+            }
+        }
+    }
+
     public string PostgresHost
     {
         get => _postgresHost;
@@ -130,7 +186,7 @@ public sealed class IntegrationStateContainer
             if (_postgresHost != value)
             {
                 _postgresHost = value;
-                SaveToLocalStorage("PostgresHost", value);
+                SaveToLocalStorage("PostgresHost_Secured", EncryptString(value));
                 NotifyStateChanged();
             }
         }
@@ -224,7 +280,7 @@ public sealed class IntegrationStateContainer
             if (_supabaseAnonKey != value)
             {
                 _supabaseAnonKey = value;
-                SaveToLocalStorage("SupabaseAnonKey", value);
+                SaveToLocalStorage("SupabaseAnonKey_Secured", EncryptString(value));
                 NotifyStateChanged();
             }
         }

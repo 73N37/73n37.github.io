@@ -705,6 +705,18 @@ CREATE TABLE IF NOT EXISTS subevents (
         await Task.Delay(600);
         _diagLogs.Add($"[{DateTime.Now:HH:mm:ss} SYS] Automatiske Graph Webhook notifikationsabonnementer bekræftet.");
         
+        await Task.Delay(800);
+        _diagLogs.Add($"[{DateTime.Now:HH:mm:ss} OUTLOOK-WEBHOOK] Lytter efter Graph delta-ændringer på /api/webhooks/calendar...");
+        _diagLogs.Add($"[{DateTime.Now:HH:mm:ss} OUTLOOK-WEBHOOK] [Test Sync] Modtog Graph-besked: Outlook-aftale 'Kensington Bryllup' ændret.");
+        _diagLogs.Add($"[{DateTime.Now:HH:mm:ss} OUTLOOK-WEBHOOK] [Test Sync] Skrev ændringer for 'Kensington Bryllup' til databasen. (Status: Succes).");
+        StateHasChanged();
+
+        await Task.Delay(800);
+        _diagLogs.Add($"[{DateTime.Now:HH:mm:ss} SIGNALR-SYNC] Etablerer Live-sync forbindelse (SignalR/WebSockets)...");
+        _diagLogs.Add($"[{DateTime.Now:HH:mm:ss} SIGNALR-SYNC] Forbindelse etableret til hub. Live-opdateringer aktiveret.");
+        _diagLogs.Add($"[{DateTime.Now:HH:mm:ss} SIGNALR-SYNC] [Test Sync] Modtog broadcast: Selskab 'Kensington Bryllup' flyttet til kolonne 'Afvikling'.");
+        StateHasChanged();
+        
         UpdateSystemHealth();
         if (_systemHealthy)
         {

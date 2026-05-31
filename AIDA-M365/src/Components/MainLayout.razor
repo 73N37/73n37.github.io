@@ -4,9 +4,6 @@
 @inject NavigationManager NavigationManager
 
 <MudThemeProvider Theme="_estateTheme" @ref="_themeProvider" @bind-IsDarkMode="_isDarkMode" />
-<MudPopoverProvider />
-<MudDialogProvider />
-<MudSnackbarProvider />
 
 <MudLayout Class="@(_isDarkMode ? "dark-mode" : "")" Style="@(GetLayoutStyle())">
     <MudAppBar Elevation="2" Style="@(GetAppBarStyle())">
@@ -25,6 +22,13 @@
             <MudButton Variant="Variant.Text" Style="color: white; font-weight: 500; border-radius: 8px;" Class="mx-1" Href="/home">Styringstavle</MudButton>
             <MudButton Variant="Variant.Text" Style="color: white; font-weight: 500; border-radius: 8px;" Class="mx-1" Href="/upcoming-events">Godskalender</MudButton>
             <MudIconButton Icon="@Icons.Material.Filled.Settings" Href="/connect" Style="color: white; border-radius: 8px;" Class="mx-1" Title="Integrationscenter (Indstillinger)" />
+            
+            <!-- Beautiful Dynamic Obsidian vs Light Frost Theme Toggler Switch -->
+            <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.Brightness5 : Icons.Material.Filled.Brightness4)" 
+                           OnClick="ToggleTheme" 
+                           Style="color: #D4AF37; border-radius: 8px;" 
+                           Class="mx-1" 
+                           Title="@(_isDarkMode ? "Skift til Lys tilstand (Light Frost)" : "Skift til Mørk tilstand (Dark Obsidian)")" />
         </MudStack>
 
     </MudAppBar>
@@ -50,7 +54,7 @@
 
 @code {
     private MudThemeProvider? _themeProvider;
-    private bool _isDarkMode = false; // Exclusively light cream-linen/gold style
+    private bool _isDarkMode = false;
 
     private readonly MudTheme _estateTheme = new()
     {
@@ -87,6 +91,13 @@
     protected override void OnInitialized()
     {
         StateContainer.OnChange += StateHasChanged;
+        _isDarkMode = StateContainer.IsDarkMode;
+    }
+
+    private void ToggleTheme()
+    {
+        StateContainer.IsDarkMode = !StateContainer.IsDarkMode;
+        _isDarkMode = StateContainer.IsDarkMode;
     }
 
     protected override Task OnAfterRenderAsync(bool firstRender)

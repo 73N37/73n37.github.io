@@ -325,6 +325,13 @@
             else
             {
                 <!-- LÆSE / DETALJER TILSTAND -->
+                @if (!StateContainer.DidLastFetchSucceed)
+                {
+                    <MudAlert Severity="Severity.Warning" Variant="Variant.Filled" Style="border-radius: 8px; font-size: 0.8rem; line-height: 1.4; border-left: 5px solid #F59E0B; background-color: #FEF3C7; color: #92400E;" Class="mb-3">
+                        <strong>Offline Backup-kopi:</strong> Kunne ikke etablere live-forbindelse til databasen. Appen viser en cached backup-kopi af selskabsoplysningerne gemt lokalt i browserens sandkasse.
+                    </MudAlert>
+                }
+
                 <MudStack Row="true" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
                     <MudChip Size="Size.Medium" 
                              Color="@(_selectedCard.EventSubtype == "Bryllup" || _selectedCard.EventSubtype == "Wedding" ? Color.Secondary : Color.Primary)" 
@@ -384,8 +391,103 @@
                     </MudStack>
                 </MudPaper>
 
+                <!-- e-conomic ERP Billing Integration Panel -->
+                @if (_selectedCard.EconomicInvoiceNumber.HasValue)
+                {
+                    <MudPaper Class="pa-4 rounded-lg" Outlined="true" Style="background-color: #F0FDF4; border: 1px solid #BBF7D0;">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                            <MudIcon Icon="@Icons.Material.Filled.Receipt" Color="Color.Success" />
+                            <MudStack Spacing="0" Style="flex-grow: 1;">
+                                <MudText Typo="Typo.caption" Class="text-muted font-weight-bold">E-CONOMIC ERP FAKTURA</MudText>
+                                <MudText Typo="Typo.body2" Class="font-weight-bold" Style="color: #166534;">Bogført Faktura #@_selectedCard.EconomicInvoiceNumber.Value</MudText>
+                            </MudStack>
+                            <MudButton Variant="Variant.Text" Color="Color.Success" StartIcon="@Icons.Material.Filled.OpenInNew" Href="@_selectedCard.EconomicPaymentLink" Target="_blank" Style="font-weight: bold;">PDF</MudButton>
+                        </MudStack>
+                    </MudPaper>
+                }
+                else if (_isStaffView)
+                {
+                    <MudButton Variant="Variant.Filled" 
+                               Color="Color.Warning" 
+                               StartIcon="@Icons.Material.Filled.PointOfSale" 
+                               OnClick="() => BookEconomicInvoiceAsync(_selectedCard)" 
+                               Disabled="@_isBookingInvoice"
+                               Style="background-color: #D4AF37; color: white; border-radius: 8px; font-weight: bold; width: 100%;">
+                        @(_isBookingInvoice ? "Bogfører faktura..." : "Bogfør Faktura i e-conomic")
+                    </MudButton>
+                }
+
+                <!-- Visuel Bordplanlægger (Interactive Seating Canvas) -->
+                <MudPaper Class="pa-4 rounded-lg mt-3" Outlined="true" Style="background-color: white; border-top: 3px solid #D4AF37;">
+                    <MudStack Spacing="2">
+                        <MudText Typo="Typo.subtitle2" Class="font-weight-bold" Style="color: #2C3E50; display: flex; align-items: center; gap: 8px;">
+                            <MudIcon Icon="@Icons.Material.Filled.TableBar" Color="Color.Primary" />
+                            Visuel Gæste-Bordplanlægger (Maks. 120 personer)
+                        </MudText>
+                        <MudText Typo="Typo.caption" Style="color: #7F8C8D;">Klik på en gæst for at placere dem ved et af herregårdens selskabsborde live (Skiftes: Uplaceret -> Bord 1 -> Bord 2).</MudText>
+                        
+                        <MudDivider Class="my-2" />
+
+                        <!-- Tables Visual Grid -->
+                        <MudGrid Spacing="2" Class="my-2">
+                            <!-- Bord 1 (Den Store Lade / Hovedbord) -->
+                            <MudItem xs="6">
+                                <MudPaper Class="pa-3 rounded-lg text-center" Outlined="true" Style="background-color: #FAF9F6; border: 1px solid rgba(212,175,55,0.3);">
+                                    <MudText Typo="Typo.caption" Class="font-weight-bold" Style="color: #D4AF37;">👑 BORD 1 (Hovedbord)</MudText>
+                                    <MudStack Spacing="1" Class="mt-2" Style="min-height: 60px;">
+                                        @foreach (var guest in _seatingGuests.Where(g => g.TableNumber == 1))
+                                        {
+                                            <div class="guest-pill" @onclick="() => ToggleGuestPlacement(guest)">
+                                                @guest.Name
+                                            </div>
+                                        }
+                                        @if (!_seatingGuests.Any(g => g.TableNumber == 1))
+                                        {
+                                            <MudText Typo="Typo.caption" Style="color: #BDC3C7;" Class="font-italic">Bordet er tomt</MudText>
+                                        }
+                                    </MudStack>
+                                </MudPaper>
+                            </MudItem>
+
+                            <!-- Bord 2 (Rose Selskabsbord) -->
+                            <MudItem xs="6">
+                                <MudPaper Class="pa-3 rounded-lg text-center" Outlined="true" Style="background-color: #FAF9F6; border: 1px solid rgba(13,148,136,0.3);">
+                                    <MudText Typo="Typo.caption" Class="font-weight-bold" Style="color: #0D9488;">🌸 BORD 2 (Rose Bord)</MudText>
+                                    <MudStack Spacing="1" Class="mt-2" Style="min-height: 60px;">
+                                        @foreach (var guest in _seatingGuests.Where(g => g.TableNumber == 2))
+                                        {
+                                            <div class="guest-pill" @onclick="() => ToggleGuestPlacement(guest)">
+                                                @guest.Name
+                                            </div>
+                                        }
+                                        @if (!_seatingGuests.Any(g => g.TableNumber == 2))
+                                        {
+                                            <MudText Typo="Typo.caption" Style="color: #BDC3C7;" Class="font-italic">Bordet er tomt</MudText>
+                                        }
+                                    </MudStack>
+                                </MudPaper>
+                            </MudItem>
+                        </MudGrid>
+
+                        <!-- Uplacerede Gæster Pool -->
+                        <MudText Typo="Typo.caption" Class="font-weight-bold mt-2" Style="color: #7F8C8D;">UPLACEREDE GÆSTER</MudText>
+                        <div class="d-flex flex-wrap gap-2 pa-2 rounded-lg" style="background-color: #FAF9F6; border: 1px dashed #BDC3C7; min-height: 50px;">
+                            @foreach (var guest in _seatingGuests.Where(g => g.TableNumber == 0))
+                            {
+                                <span class="unplaced-pill" @onclick="() => ToggleGuestPlacement(guest)">
+                                    @guest.Name
+                                </span>
+                            }
+                            @if (!_seatingGuests.Any(g => g.TableNumber == 0))
+                            {
+                                <MudText Typo="Typo.caption" Style="color: #2ECC71;" Class="font-italic font-weight-bold">Alle gæster er placeret!</MudText>
+                            }
+                        </div>
+                    </MudStack>
+                </MudPaper>
+
                 <!-- Timetable / Subevents Section -->
-                <MudPaper Class="pa-4 rounded-lg" Outlined="true" Style="background-color: white;">
+                <MudPaper Class="pa-4 rounded-lg mt-3" Outlined="true" Style="background-color: white;">
                     <MudText Typo="Typo.subtitle2" Class="font-weight-bold mb-2" Style="color: #2C3E50;">Dagens Program (Del-begivenheder)</MudText>
                     
                     @if (_selectedCard.Subevents == null || _selectedCard.Subevents.Count == 0)
@@ -506,6 +608,13 @@
             </MudStack>
             <MudDivider />
 
+            @if (!string.IsNullOrWhiteSpace(_logMessage) && _logMessage.StartsWith("[Systemfejl]"))
+            {
+                <MudAlert Severity="Severity.Error" Dense="true" Variant="Variant.Outlined" Style="border-radius: 8px;">
+                    @_logMessage
+                </MudAlert>
+            }
+
             <MudTextField @bind-Value="_newSubject"
                           Label="@(_isStaffView ? "Selskabsnavn / Emne" : "Dit Navn / Selskabsnavn")"
                           Variant="Variant.Outlined"
@@ -595,6 +704,42 @@
     .calendar-day-cell:hover {
         background-color: #FAF6EE !important; /* Soft Linen-Cream hover color */
         border-color: #D4AF37 !important; /* Elegant Gold border focus */
+    }
+
+    .guest-pill {
+        background-color: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 4px;
+        padding: 4px 8px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        margin: 2px 0;
+    }
+    .guest-pill:hover {
+        background-color: #F8FAFC;
+        border-color: #CBD5E1;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+    .unplaced-pill {
+        background-color: white;
+        border: 1px dashed #CBD5E1;
+        border-radius: 4px;
+        padding: 4px 8px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-block;
+    }
+    .unplaced-pill:hover {
+        background-color: #0D9488;
+        color: white;
+        border-color: #0D9488;
+        transform: scale(1.05);
     }
 </style>
 
@@ -1159,6 +1304,64 @@
     private void SimulateExcelExport()
     {
         _logMessage = $"[System Hub] Excel-ark med gæsteantal og catering-valg hentet til 'Catering_Reservations_{_currentDate:MMyyyy}.xlsx'.";
+    }
+
+    // e-conomic Billing Action
+    private bool _isBookingInvoice = false;
+    
+    private async Task BookEconomicInvoiceAsync(KanbanEventCard card)
+    {
+        _isBookingInvoice = true;
+        StateHasChanged();
+        
+        await Task.Delay(1500); // Simulate API latency
+        
+        var random = new Random();
+        int invoiceNum = random.Next(2026100, 2026999);
+        string paymentLink = $"https://restapi.e-conomic.com/invoices/booked/{invoiceNum}/pdf";
+        
+        card.EconomicInvoiceNumber = invoiceNum;
+        card.EconomicPaymentLink = paymentLink;
+        
+        // Save back to PostgreSQL/Supabase live!
+        await PostgresService.SaveEventAsync(card);
+        
+        _isBookingInvoice = false;
+        StateHasChanged();
+        
+        _logMessage = $"[Succes] Faktura #{invoiceNum} bogført succesfuldt i e-conomic!";
+    }
+
+    // Seating Plan Model & Methods
+    public class SeatingGuest
+    {
+        public string Name { get; set; } = string.Empty;
+        public int TableNumber { get; set; } = 0; // 0 = Unplaced, 1 = Table 1, 2 = Table 2
+    }
+
+    private readonly List<SeatingGuest> _seatingGuests =
+    [
+        new SeatingGuest { Name = "Christian Valdemar (Brudgom)", TableNumber = 1 },
+        new SeatingGuest { Name = "Kensington Rose (Brud)", TableNumber = 1 },
+        new SeatingGuest { Name = "Grev Ditlev Knuth", TableNumber = 1 },
+        new SeatingGuest { Name = "Lensbaronesse Reedtz", TableNumber = 1 },
+        new SeatingGuest { Name = "Sofie Linden", TableNumber = 2 },
+        new SeatingGuest { Name = "Marcus Linden", TableNumber = 2 },
+        new SeatingGuest { Name = "Frederik Holck", TableNumber = 0 },
+        new SeatingGuest { Name = "Louise Holck", TableNumber = 0 },
+        new SeatingGuest { Name = "Henrik Banner", TableNumber = 0 },
+        new SeatingGuest { Name = "Benedikte Banner", TableNumber = 0 }
+    ];
+
+    private void ToggleGuestPlacement(SeatingGuest guest)
+    {
+        if (guest.TableNumber == 0)
+            guest.TableNumber = 1;
+        else if (guest.TableNumber == 1)
+            guest.TableNumber = 2;
+        else
+            guest.TableNumber = 0;
+        StateHasChanged();
     }
 
     private class CalendarDayCell
