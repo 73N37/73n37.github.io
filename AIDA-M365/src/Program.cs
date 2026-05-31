@@ -9,7 +9,13 @@ builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
-builder.Services.AddMudServices();
+builder.Services.AddMudServices(config =>
+{
+    // Suppress the "Duplicate MudPopoverProvider" exception that fires during
+    // SPA navigation (Index.razor redirects to /home, briefly re-mounting App).
+    // The provider is correctly declared only once in App.razor.
+    config.PopoverOptions.ThrowOnDuplicateProvider = false;
+});
 builder.Services.AddScoped<AIDA.M365.Services.IntegrationStateContainer>();
 
 // Use the demo services for local viewing without requiring a real Graph connection
