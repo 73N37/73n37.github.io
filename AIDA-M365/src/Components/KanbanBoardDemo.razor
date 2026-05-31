@@ -168,7 +168,7 @@
 @if (_isCreateDrawerOpen)
 {
     <div style="position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1300;" @onclick="() => _isCreateDrawerOpen = false"></div>
-    <MudPaper Elevation="8" Style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1301; width: 480px; max-width: calc(100vw - 32px); max-height: 90vh; overflow-y: auto; border-radius: 12px; background-color: #FAF9F6; font-family: 'Inter', sans-serif;">
+    <MudPaper Elevation="8" Style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1301; width: 480px; max-width: calc(100vw - 32px); max-height: 90vh; overflow-y: visible; border-radius: 12px; background-color: #FAF9F6; font-family: 'Inter', sans-serif;">
         <MudStack Class="pa-6" Spacing="4">
             <MudStack Row="true" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
                 <MudText Typo="Typo.h5" Class="font-weight-bold" Style="color: #2C3E50;">
@@ -189,8 +189,8 @@
                            Variant="Variant.Outlined"
                            Margin="Margin.Dense"
                            Required="true"
-                           PickerVariant="PickerVariant.Static"
-                           Style="background-color: white; border-radius: 8px;" />
+                           PickerVariant="PickerVariant.Dialog"
+                           Style="border-radius: 8px;" />
 
             <MudGrid Spacing="2">
                 <MudItem xs="6">
