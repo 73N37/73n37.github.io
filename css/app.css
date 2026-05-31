@@ -1,6 +1,19 @@
 /* Google Fonts — must be @import first, before any rules */
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap');
 
+/* ── Z-index overrides ────────────────────────────────────────────────────────
+   The "Opret Selskab" modal form sits at z-index 1301. MudBlazor's default
+   --mud-zindex-popover is 1300, which causes MudSelect dropdowns to render
+   BEHIND the form. Bumping both the popover and the scrollbar (used internally
+   by some popovers) above 1301 fixes the stacking order everywhere in the app.
+   ─────────────────────────────────────────────────────────────────────────── */
+:root {
+    --mud-zindex-popover: 2000;
+    --mud-zindex-tooltip: 2100;
+    --mud-zindex-snackbar: 2200;
+    --mud-zindex-dialog: 2300;
+}
+
 /* Core custom styling for Estate Rental Command Center */
 
 body {
