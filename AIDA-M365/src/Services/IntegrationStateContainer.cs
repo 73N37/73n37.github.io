@@ -12,17 +12,17 @@ public sealed class IntegrationStateContainer
     private bool _isPostgresConnected = true; // Connected by default now!
     private bool _isDarkMode = false; // Exclusively light cream-linen/gold style by default
 
-    // Default to User's provided Supabase Project URL
-    private string _postgresHost = "hrkgvifqbjllhhxzfcfa.supabase.co";
-    private int _postgresPort = 5432;
+    // Default to Local PostgreSQL / PostgREST
+    private string _postgresHost = "localhost";
+    private int _postgresPort = 3000;
     private string _postgresDatabase = "gods_booking_db";
-    private string _postgresUsername = "gods_admin";
-    private string _postgresPassword = "••••••••••••••••";
+    private string _postgresUsername = "postgres";
+    private string _postgresPassword = "postgres_password";
 
-    private bool _useSupabase = true; // Default to true now!
+    private bool _useSupabase = false; // Default to false for local demo!
     
-    // Default to User's provided Supabase Anon Key
-    private string _supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhya2d2aWZxYmpsbGhoeHpmY2ZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyMTc5OTUsImV4cCI6MjA5NTc5Mzk5NX0.bsuHAXhVUpsqB7JE7fcMmmwJpnBZLwc8Eil-dic_890";
+    // Default to empty for local demo
+    private string _supabaseAnonKey = "";
 
     // e-conomic Billing State
     public int? LastInvoiceNumber { get; set; }
@@ -32,10 +32,10 @@ public sealed class IntegrationStateContainer
     {
         _js = js as IJSInProcessRuntime;
         
-        // 1. Initial Defaults
-        _postgresHost = "hrkgvifqbjllhhxzfcfa.supabase.co";
-        _supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhya2d2aWZxYmpsbGhoeHpmY2ZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyMTc5OTUsImV4cCI6MjA5NTc5Mzk5NX0.bsuHAXhVUpsqB7JE7fcMmmwJpnBZLwc8Eil-dic_890";
-        _useSupabase = true;
+        // 1. Initial Defaults - Local PostgreSQL
+        _postgresHost = "localhost";
+        _supabaseAnonKey = "";
+        _useSupabase = false;
         _isPostgresConnected = true;
         _isDarkMode = false;
 
