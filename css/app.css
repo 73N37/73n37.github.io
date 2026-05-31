@@ -92,3 +92,9 @@ body {
 .brand-text {
     font-family: 'Playfair Display', serif !important;
 }
+
+/* Hide the default Blazor error UI bar — the app uses demo services and
+   the red "An unhandled error has occurred" banner is misleading for visitors */
+#blazor-error-ui {
+    display: none !important;
+}
