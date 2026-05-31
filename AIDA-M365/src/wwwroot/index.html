@@ -8,10 +8,14 @@
     <script type="text/javascript">
         // SPA routing path restoration for GitHub Pages
         (function () {
-            var redirect = sessionStorage.getItem('redirect_path');
-            if (redirect) {
-                sessionStorage.removeItem('redirect_path');
-                window.history.replaceState(null, null, redirect);
+            try {
+                var redirect = sessionStorage.getItem('redirect_path');
+                if (redirect) {
+                    sessionStorage.removeItem('redirect_path');
+                    window.history.replaceState(null, null, redirect);
+                }
+            } catch (e) {
+                console.warn("sessionStorage is restricted in this environment:", e);
             }
         })();
     </script>

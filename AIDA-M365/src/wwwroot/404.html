@@ -9,7 +9,11 @@
         var search = window.location.search;
         var hash = window.location.hash;
         
-        sessionStorage.setItem('redirect_path', pathname + search + hash);
+        try {
+            sessionStorage.setItem('redirect_path', pathname + search + hash);
+        } catch (e) {
+            console.warn("sessionStorage is restricted in this environment:", e);
+        }
         
         // Calculate the base path dynamically
         // Handles both repository subfolders (/Godset/) and root user domains (73n37.github.io)
