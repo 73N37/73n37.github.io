@@ -31,6 +31,7 @@ public sealed class PostgresDatabaseService : IPostgresDatabaseService
         if (!_stateContainer.IsPostgresConnected)
         {
             _logger.LogInformation("[PostgreSQL] Backup sync is offline. Fetching from local in-memory state.");
+            _stateContainer.DidLastFetchSucceed = true;
             return _stateContainer.Cards;
         }
 
@@ -47,12 +48,15 @@ public sealed class PostgresDatabaseService : IPostgresDatabaseService
                 if (events != null)
                 {
                     _stateContainer.Cards = events;
+                    _stateContainer.DidLastFetchSucceed = true;
                     return events;
                 }
             }
+            _stateContainer.DidLastFetchSucceed = false;
         }
         catch (Exception ex)
         {
+            _stateContainer.DidLastFetchSucceed = false;
             _logger.LogWarning(ex, "[PostgreSQL] DigitalOcean host is currently offline or unreachable. Falling back to local cache.");
         }
 

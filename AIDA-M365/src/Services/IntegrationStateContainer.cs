@@ -118,6 +118,20 @@ public sealed class IntegrationStateContainer
         }
     }
 
+    private bool _didLastFetchSucceed = true;
+    public bool DidLastFetchSucceed
+    {
+        get => _didLastFetchSucceed;
+        set
+        {
+            if (_didLastFetchSucceed != value)
+            {
+                _didLastFetchSucceed = value;
+                NotifyStateChanged();
+            }
+        }
+    }
+
     public bool IsSystemHealthy => IsM365Connected;
 
     private System.Collections.Generic.List<AIDA.M365.Models.KanbanEventCard> _cards = [];

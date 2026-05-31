@@ -489,7 +489,6 @@
                 }
             }
         </MudStack>
-    }Stack>
     }
 </MudDrawer>
 
@@ -780,7 +779,14 @@
             if (freshCard != null)
             {
                 _selectedCard = freshCard;
-                _logMessage = $"[Succes] Opdaterede detaljer for '{freshCard.Subject}' direkte fra databasen.";
+                if (StateContainer.IsPostgresConnected && StateContainer.DidLastFetchSucceed)
+                {
+                    _logMessage = $"[Succes] Opdaterede detaljer for '{freshCard.Subject}' direkte fra databasen.";
+                }
+                else
+                {
+                    _logMessage = $"[Advarsel] Kunne ikke forbinde til DigitalOcean PostgreSQL (Mixed Content / Offline). Viser lokal kopi af '{freshCard.Subject}'.";
+                }
             }
             else
             {
