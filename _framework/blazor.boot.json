@@ -1,7 +1,7 @@
 {
   "mainAssemblyName": "AIDA.M365",
   "resources": {
-    "hash": "sha256-PanQxrCTw7jYlFOgYu/SOgbn55+2UJS5pUQSfRmM9Yg=",
+    "hash": "sha256-MxHbnEaMOzb1kgMgomd+Ag3vxod4zH+XUW1cF/gC7Po=",
     "jsModuleNative": {
       "dotnet.native.js": "sha256-sn/g61GjVPhViOYQDkq1OMlk0eyS9r2Hi0qgU2o0HIU="
     },
@@ -52,7 +52,7 @@
       "Microsoft.Kiota.Serialization.Json.wasm": "sha256-cjt3qOsrr9GoRFR81UBbgug+ETIlto0S5WGA/c3QBVY=",
       "Microsoft.Kiota.Serialization.Multipart.wasm": "sha256-Xb71MhLebLE3ONXXUNYVHvpFfVDwB3u9tOunjwNL970=",
       "Microsoft.Kiota.Serialization.Text.wasm": "sha256-6WclN9T/eroBALqbGH82nVt1uY2SE4OCPp2IsbFcFaQ=",
-      "MudBlazor.wasm": "sha256-idPVm6vYGVEYrVr9MQu2kdNoG8uQhbNZlJAvjzxaXPs=",
+      "MudBlazor.wasm": "sha256-XAiVeRX1gMsL1jsFdMYETftvb3M5nAGavE2MlNKbJGk=",
       "Std.UriTemplate.wasm": "sha256-V30s6NqqaZ4byKwGbQ2/YlY2WajDFyYZcPZ6Ay0qC2c=",
       "System.IdentityModel.Tokens.Jwt.wasm": "sha256-imkKl05XqXdHBH/La4w7StnpT1ybHeZTTpbkz5zkxIU=",
       "System.Memory.Data.wasm": "sha256-oa47oEq24c04+SqrF0aDKfadFgOh7up7I5vdcwdrLOw=",
@@ -98,8 +98,8 @@
       "System.Xml.ReaderWriter.wasm": "sha256-iMlziWbGCwgR5WiTVSoi8/J+5M41PZVAIj663iQkkvI=",
       "System.wasm": "sha256-T4iprIGorUAo1X44AS78i81rjTVY995cbd5O+yc1VDY=",
       "netstandard.wasm": "sha256-FFKvQCaRO7JZ7e64Gr44n2jG0ZRO8hlT996BotwXDUY=",
-      "System.Private.CoreLib.wasm": "sha256-K1OU+TpW4HOV1V1OAdXCDMNsE18iNB8rT221ZNP5czY=",
-      "AIDA.M365.wasm": "sha256-4kwtY0s8DWC9Eg5QQwC/0Iy2238Noludf/xFc5FP6W8="
+      "System.Private.CoreLib.wasm": "sha256-XA5DS7Ni+LbFFYLC43V6pVRsohqdOatLtf2AE12rBOc=",
+      "AIDA.M365.wasm": "sha256-1hzI7aD8HJ7JsrUoveDDr0ngZomej0HfVbOpp8dZ2TU="
     }
   },
   "cacheBootResources": true,
