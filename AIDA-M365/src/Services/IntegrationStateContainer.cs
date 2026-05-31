@@ -1,18 +1,86 @@
 using System;
+using Microsoft.JSInterop;
 
 namespace AIDA.M365.Services;
 
 public sealed class IntegrationStateContainer
 {
+    private readonly IJSInProcessRuntime? _js;
+
     private bool _isM365Connected = true;
     private bool _isDynamicsConnected = true;
-    private bool _isPostgresConnected = false;
+    private bool _isPostgresConnected = true; // Connected by default now!
 
-    private string _postgresHost = "104.248.47.45";
+    // Default to User's provided Supabase Project URL
+    private string _postgresHost = "hrkgvifqbjllhhxzfcfa.supabase.co";
     private int _postgresPort = 5432;
     private string _postgresDatabase = "gods_booking_db";
     private string _postgresUsername = "gods_admin";
     private string _postgresPassword = "••••••••••••••••";
+
+    private bool _useSupabase = true; // Default to true now!
+    
+    // Default to User's provided Supabase Anon Key
+    private string _supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdvZHMtYm9va2luZ3MiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTcyNDMxODQwMCwiZXhwIjoyMDM5ODk0NDAwfQ.xxxxxx";
+
+    public IntegrationStateContainer(IJSRuntime js)
+    {
+        _js = js as IJSInProcessRuntime;
+        
+        // 1. Initial Defaults
+        _postgresHost = "hrkgvifqbjllhhxzfcfa.supabase.co";
+        _supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhya2d2aWZxYmpsbGhoeHpmY2ZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyMTc5OTUsImV4cCI6MjA5NTc5Mzk5NX0.bsuHAXhVUpsqB7JE7fcMmmwJpnBZLwc8Eil-dic_890";
+        _useSupabase = true;
+        _isPostgresConnected = true;
+
+        // 2. Override with local storage if saved previously
+        LoadFromLocalStorage();
+    }
+
+    private void LoadFromLocalStorage()
+    {
+        if (_js == null) return;
+        try
+        {
+            var useSupabaseStr = _js.Invoke<string>("localStorage.getItem", "UseSupabase");
+            if (!string.IsNullOrEmpty(useSupabaseStr))
+            {
+                _useSupabase = bool.Parse(useSupabaseStr);
+            }
+
+            var supabaseAnonKeyStr = _js.Invoke<string>("localStorage.getItem", "SupabaseAnonKey");
+            if (supabaseAnonKeyStr != null)
+            {
+                _supabaseAnonKey = supabaseAnonKeyStr;
+            }
+
+            var postgresHostStr = _js.Invoke<string>("localStorage.getItem", "PostgresHost");
+            if (postgresHostStr != null)
+            {
+                _postgresHost = postgresHostStr;
+            }
+
+            var pgConnectedStr = _js.Invoke<string>("localStorage.getItem", "IsPostgresConnected");
+            if (!string.IsNullOrEmpty(pgConnectedStr))
+            {
+                _isPostgresConnected = bool.Parse(pgConnectedStr);
+            }
+        }
+        catch
+        {
+            // Fallback gracefully if localStorage is restricted
+        }
+    }
+
+    private void SaveToLocalStorage(string key, string value)
+    {
+        if (_js == null) return;
+        try
+        {
+            _js.InvokeVoid("localStorage.setItem", key, value);
+        }
+        catch {}
+    }
 
     public bool IsM365Connected
     {
@@ -48,6 +116,7 @@ public sealed class IntegrationStateContainer
             if (_isPostgresConnected != value)
             {
                 _isPostgresConnected = value;
+                SaveToLocalStorage("IsPostgresConnected", value.ToString());
                 NotifyStateChanged();
             }
         }
@@ -61,6 +130,7 @@ public sealed class IntegrationStateContainer
             if (_postgresHost != value)
             {
                 _postgresHost = value;
+                SaveToLocalStorage("PostgresHost", value);
                 NotifyStateChanged();
             }
         }
@@ -132,7 +202,6 @@ public sealed class IntegrationStateContainer
         }
     }
 
-    private bool _useSupabase = false;
     public bool UseSupabase
     {
         get => _useSupabase;
@@ -141,12 +210,12 @@ public sealed class IntegrationStateContainer
             if (_useSupabase != value)
             {
                 _useSupabase = value;
+                SaveToLocalStorage("UseSupabase", value.ToString());
                 NotifyStateChanged();
             }
         }
     }
 
-    private string _supabaseAnonKey = "";
     public string SupabaseAnonKey
     {
         get => _supabaseAnonKey;
@@ -155,6 +224,7 @@ public sealed class IntegrationStateContainer
             if (_supabaseAnonKey != value)
             {
                 _supabaseAnonKey = value;
+                SaveToLocalStorage("SupabaseAnonKey", value);
                 NotifyStateChanged();
             }
         }

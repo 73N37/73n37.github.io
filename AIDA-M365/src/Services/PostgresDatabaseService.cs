@@ -44,6 +44,10 @@ public sealed class PostgresDatabaseService : IPostgresDatabaseService
         if (_stateContainer.UseSupabase)
         {
             var host = _stateContainer.PostgresHost.Replace("http://", "").Replace("https://", "").TrimEnd('/');
+            if (host.EndsWith("/rest/v1", StringComparison.OrdinalIgnoreCase))
+            {
+                host = host.Substring(0, host.Length - 8).TrimEnd('/');
+            }
             return $"https://{host}/rest/v1/{path}";
         }
         else

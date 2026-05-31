@@ -4,6 +4,9 @@
 @inject NavigationManager NavigationManager
 
 <MudThemeProvider Theme="_estateTheme" @ref="_themeProvider" @bind-IsDarkMode="_isDarkMode" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
 
 <MudLayout Class="@(_isDarkMode ? "dark-mode" : "")" Style="@(GetLayoutStyle())">
     <MudAppBar Elevation="2" Style="@(GetAppBarStyle())">
