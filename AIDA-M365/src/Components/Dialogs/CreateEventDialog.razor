@@ -1,0 +1,194 @@
+@using AIDA.M365.Models
+@using MudBlazor
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6" Class="font-weight-bold" Style="color: #2C3E50; font-family: 'Outfit', sans-serif;">
+            @(IsStaffView ? "Opret Selskab" : "Send Forespørgsel om Reservation")
+        </MudText>
+    </TitleContent>
+
+    <DialogContent>
+        <MudStack Spacing="3" Style="min-width: 420px; padding-top: 4px;">
+
+            <MudTextField @bind-Value="_subject"
+                          Label="@(IsStaffView ? "Selskabsnavn / Emne" : "Dit Navn / Selskabsnavn")"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Required="true" />
+
+            <MudDatePicker @bind-Date="_date"
+                           Label="Dato"
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense"
+                           Required="true"
+                           PickerVariant="PickerVariant.Dialog"
+                           Style="border-radius: 8px;" />
+
+            <MudGrid Spacing="2">
+                <MudItem xs="6">
+                    <MudTimePicker @bind-Time="_startTime"
+                                   Label="Starttidspunkt"
+                                   Variant="Variant.Outlined"
+                                   Margin="Margin.Dense"
+                                   Required="true" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudTimePicker @bind-Time="_endTime"
+                                   Label="Sluttidspunkt"
+                                   Variant="Variant.Outlined"
+                                   Margin="Margin.Dense"
+                                   Required="true" />
+                </MudItem>
+            </MudGrid>
+
+            <MudSelect @bind-Value="_area"
+                       Label="Lokation på Engestofte Gods"
+                       Variant="Variant.Outlined"
+                       Margin="Margin.Dense">
+                <MudSelectItem Value="@("Den Store Lade")">Den Store Lade</MudSelectItem>
+                <MudSelectItem Value="@("Hovedbygningen")">Hovedbygningen</MudSelectItem>
+                <MudSelectItem Value="@("Søparken")">Søparken</MudSelectItem>
+            </MudSelect>
+
+            <MudSelect @bind-Value="_subtype"
+                       Label="Kategori"
+                       Variant="Variant.Outlined"
+                       Margin="Margin.Dense">
+                <MudSelectItem Value="@("Bryllup")">Bryllup</MudSelectItem>
+                <MudSelectItem Value="@("Konference")">Konference</MudSelectItem>
+                <MudSelectItem Value="@("Privat Fest")">Privat Fest</MudSelectItem>
+                <MudSelectItem Value="@("Jagt & Event")">Jagt &amp; Event</MudSelectItem>
+            </MudSelect>
+
+            <MudNumericField @bind-Value="_guestCount"
+                             Label="Antal Gæster"
+                             Variant="Variant.Outlined"
+                             Margin="Margin.Dense"
+                             Min="1" />
+
+            <MudSelect @bind-Value="_catering"
+                       Label="Forplejning"
+                       Variant="Variant.Outlined"
+                       Margin="Margin.Dense">
+                <MudSelectItem Value="@("Gourmet Selskabsmenu")">Gourmet Selskabsmenu</MudSelectItem>
+                <MudSelectItem Value="@("Konference-dagsmenu")">Konference-dagsmenu</MudSelectItem>
+                <MudSelectItem Value="@("Brunch & Champagne")">Brunch &amp; Champagne</MudSelectItem>
+            </MudSelect>
+
+            <MudNumericField @bind-Value="_price"
+                             Label="Pris (DKK)"
+                             Variant="Variant.Outlined"
+                             Margin="Margin.Dense"
+                             Min="0"
+                             Format="N0"
+                             Adornment="Adornment.End"
+                             AdornmentText="kr."
+                             HideSpinButtons="true" />
+
+            @if (IsStaffView)
+            {
+                <MudTextField @bind-Value="_coordinator"
+                              Label="Ansvarlig Koordinator"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense" />
+            }
+
+            @if (!string.IsNullOrEmpty(_validationError))
+            {
+                <MudAlert Severity="Severity.Error" Dense="true">@_validationError</MudAlert>
+            }
+
+        </MudStack>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Variant="Variant.Outlined"
+                   Color="Color.Default"
+                   OnClick="Cancel"
+                   Style="border-radius: 8px;">
+            Annuller
+        </MudButton>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   OnClick="Submit"
+                   Style="background-color: #2C3E50; color: white; border-radius: 8px; font-weight: bold;">
+            @(IsStaffView ? "Gem Selskab" : "Send Forespørgselsmail")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    MudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter]
+    public bool IsStaffView { get; set; } = true;
+
+    // Form state — initialised with sensible defaults
+    private string _subject     = string.Empty;
+    private DateTime? _date     = DateTime.Today;
+    private TimeSpan? _startTime = new TimeSpan(11, 0, 0);
+    private TimeSpan? _endTime   = new TimeSpan(18, 0, 0);
+    private string _area        = "Den Store Lade";
+    private string _subtype     = "Bryllup";
+    private int _guestCount     = 50;
+    private string _catering    = "Gourmet Selskabsmenu";
+    private decimal _price      = 0;
+    private string _coordinator = "Sarah Jenkins";
+    private string _validationError = string.Empty;
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private void Submit()
+    {
+        _validationError = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(_subject))
+        {
+            _validationError = "Selskabsnavn skal udfyldes.";
+            return;
+        }
+        if (!_date.HasValue || !_startTime.HasValue || !_endTime.HasValue)
+        {
+            _validationError = "Dato, starttid og sluttid skal angives.";
+            return;
+        }
+
+        var start = _date.Value.Add(_startTime.Value);
+        var end   = _date.Value.Add(_endTime.Value);
+
+        if (end <= start)
+        {
+            _validationError = "Sluttidspunkt skal være efter starttidspunkt.";
+            return;
+        }
+
+        var result = new NewEventData(
+            Subject:     _subject,
+            StartUtc:    start,
+            EndUtc:      end,
+            Area:        _area,
+            Subtype:     _subtype,
+            GuestCount:  _guestCount,
+            Catering:    _catering,
+            Price:       _price > 0 ? _price : null,
+            Coordinator: _coordinator
+        );
+
+        MudDialog.Close(DialogResult.Ok(result));
+    }
+
+    /// <summary>Data returned to the caller via DialogResult.Ok(result).</summary>
+    public sealed record NewEventData(
+        string Subject,
+        DateTime StartUtc,
+        DateTime EndUtc,
+        string Area,
+        string Subtype,
+        int GuestCount,
+        string Catering,
+        decimal? Price,
+        string Coordinator
+    );
+}

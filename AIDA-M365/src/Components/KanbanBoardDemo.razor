@@ -5,6 +5,7 @@
 @using MudBlazor
 @inject AIDA.M365.Services.IPostgresDatabaseService PostgresService
 @inject AIDA.M365.Services.IntegrationStateContainer StateContainer
+@inject IDialogService DialogService
 
 <MudContainer MaxWidth="MaxWidth.False" Class="pa-6" Style="background: transparent;">
     <MudStack Spacing="6">
@@ -25,7 +26,7 @@
                         <MudButton Variant="Variant.Filled" 
                                    Color="Color.Secondary" 
                                    StartIcon="@Icons.Material.Filled.Add"
-                                   OnClick="() => _isCreateDrawerOpen = true"
+                                   OnClick="OpenCreateDialog"
                                    Style="border-radius: 8px; font-weight: 600; padding: 10px 20px;">
                             Opret Selskab
                         </MudButton>
@@ -164,90 +165,7 @@
     </DialogActions>
 </MudDialog>
 
-<!-- Opret Selskab Modal (Delt med Kalenderen) -->
-@if (_isCreateDrawerOpen)
-{
-    <div style="position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1300;" @onclick="() => _isCreateDrawerOpen = false"></div>
-    <MudPaper Elevation="8" Style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1301; width: 480px; max-width: calc(100vw - 32px); max-height: 90vh; overflow-y: visible; border-radius: 12px; background-color: #FAF9F6; font-family: 'Inter', sans-serif;">
-        <MudStack Class="pa-6" Spacing="4">
-            <MudStack Row="true" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
-                <MudText Typo="Typo.h5" Class="font-weight-bold" Style="color: #2C3E50;">
-                    @(_isStaffView ? "Opret Selskab" : "Send Forespørgsel om Reservation")
-                </MudText>
-                <MudIconButton Icon="@Icons.Material.Filled.Close" Color="Color.Default" OnClick="() => _isCreateDrawerOpen = false" />
-            </MudStack>
-            <MudDivider />
 
-            <MudTextField @bind-Value="_newSubject"
-                          Label="@(_isStaffView ? "Selskabsnavn / Emne" : "Dit Navn / Selskabsnavn")"
-                          Variant="Variant.Outlined"
-                          Margin="Margin.Dense"
-                          Required="true" />
-
-            <MudDatePicker @bind-Date="_newDate"
-                           Label="Dato"
-                           Variant="Variant.Outlined"
-                           Margin="Margin.Dense"
-                           Required="true"
-                           PickerVariant="PickerVariant.Dialog"
-                           Style="border-radius: 8px;" />
-
-            <MudGrid Spacing="2">
-                <MudItem xs="6">
-                    <MudTimePicker @bind-Time="_newStartTime" Label="Starttidspunkt" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true" />
-                </MudItem>
-                <MudItem xs="6">
-                    <MudTimePicker @bind-Time="_newEndTime" Label="Sluttidspunkt" Variant="Variant.Outlined" Margin="Margin.Dense" Required="true" />
-                </MudItem>
-            </MudGrid>
-
-            <MudSelect @bind-Value="_newArea" Label="Lokation på Engestofte Gods" Variant="Variant.Outlined" Margin="Margin.Dense">
-                <MudSelectItem Value="@("Den Store Lade")">Den Store Lade</MudSelectItem>
-                <MudSelectItem Value="@("Hovedbygningen")">Hovedbygningen</MudSelectItem>
-                <MudSelectItem Value="@("Søparken")">Søparken</MudSelectItem>
-            </MudSelect>
-
-            <MudSelect @bind-Value="_newSubtype" Label="Kategori" Variant="Variant.Outlined" Margin="Margin.Dense">
-                <MudSelectItem Value="@("Bryllup")">Bryllup</MudSelectItem>
-                <MudSelectItem Value="@("Konference")">Konference</MudSelectItem>
-                <MudSelectItem Value="@("Privat Fest")">Privat Fest</MudSelectItem>
-                <MudSelectItem Value="@("Jagt & Event")">Jagt & Event</MudSelectItem>
-            </MudSelect>
-
-            <MudNumericField @bind-Value="_newGuestCount" Label="Antal Gæster" Variant="Variant.Outlined" Margin="Margin.Dense" Min="1" />
-
-            <MudSelect @bind-Value="_newCatering" Label="Forplejning" Variant="Variant.Outlined" Margin="Margin.Dense">
-                <MudSelectItem Value="@("Gourmet Selskabsmenu")">Gourmet Selskabsmenu</MudSelectItem>
-                <MudSelectItem Value="@("Konference-dagsmenu")">Konference-dagsmenu</MudSelectItem>
-                <MudSelectItem Value="@("Brunch & Champagne")">Brunch & Champagne</MudSelectItem>
-            </MudSelect>
-
-            <MudNumericField @bind-Value="_newPrice"
-                             Label="Pris (DKK)"
-                             Variant="Variant.Outlined"
-                             Margin="Margin.Dense"
-                             Min="0"
-                             Format="N0"
-                             Adornment="Adornment.End"
-                             AdornmentText="kr."
-                             HideSpinButtons="true" />
-
-            @if (_isStaffView)
-            {
-                <MudTextField @bind-Value="_newCoordinator" Label="Ansvarlig Koordinator" Variant="Variant.Outlined" Margin="Margin.Dense" />
-            }
-
-            <MudStack Row="true" Spacing="2" JustifyContent="JustifyContent.FlexEnd">
-                <MudButton Variant="Variant.Outlined" Color="Color.Default" OnClick="() => _isCreateDrawerOpen = false" Style="border-radius: 8px;">
-                    Annuller
-                </MudButton>
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveNewReservation" Style="background-color: #2C3E50; color: white; border-radius: 8px; font-weight: bold;">
-                    @(_isStaffView ? "Gem Selskab" : "Send Forespørgselsmail")
-                </MudButton>
-            </MudStack>
-        </MudStack>
-    </MudPaper>
-}
 
 <style>
     .pulse-indicator {
@@ -498,61 +416,67 @@
         StateHasChanged();
     }
 
-    private async Task SaveNewReservation()
+    private async Task OpenCreateDialog()
     {
-        if (string.IsNullOrWhiteSpace(_newSubject))
+        var parameters = new DialogParameters
         {
-            _lastUpdatedMessage = "[Systemfejl] Selskabsnavn skal udfyldes.";
-            return;
-        }
-
-        if (!_newDate.HasValue || !_newStartTime.HasValue || !_newEndTime.HasValue)
+            [nameof(AIDA.M365.Components.Dialogs.CreateEventDialog.IsStaffView)] = _isStaffView
+        };
+        var options = new DialogOptions
         {
-            _lastUpdatedMessage = "[Systemfejl] Dato, starttid og sluttid skal angives.";
-            return;
-        }
+            MaxWidth        = MaxWidth.Small,
+            FullWidth       = true,
+            CloseButton     = true,
+            BackdropClick   = true
+        };
 
-        var startDateTime = _newDate.Value.Add(_newStartTime.Value);
-        var endDateTime = _newDate.Value.Add(_newEndTime.Value);
+        var title = _isStaffView ? "Opret Selskab" : "Send Forespørgsel om Reservation";
+        var dialog = await DialogService.ShowAsync<AIDA.M365.Components.Dialogs.CreateEventDialog>(title, parameters, options);
+        var result = await dialog.Result;
 
-        if (endDateTime <= startDateTime)
-        {
-            _lastUpdatedMessage = "[Systemfejl] Sluttidspunkt skal være efter starttidspunkt.";
-            return;
-        }
+        if (result is null || result.Canceled) return;
+
+        var data = (AIDA.M365.Components.Dialogs.CreateEventDialog.NewEventData)result.Data!;
+        await SaveNewReservationFromDialog(data);
+    }
+
+    private async Task SaveNewReservationFromDialog(AIDA.M365.Components.Dialogs.CreateEventDialog.NewEventData data)
+    {
+        // Validation is handled inside CreateEventDialog before calling Close(Ok(...)).
+        // Here we just map the result to a KanbanEventCard and persist it.
 
         string targetSection = _isStaffView ? "confirmed" : "inquiry";
         string targetPriority = "Normal";
         string targetColor = "#10B981"; // default emerald
         
-        if (string.Equals(_newSubtype, "Bryllup", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(data.Subtype, "Bryllup", StringComparison.OrdinalIgnoreCase))
         {
-            targetColor = "#D4AF37"; // gold
+            targetColor    = "#D4AF37";
             targetPriority = "High";
         }
-        else if (string.Equals(_newSubtype, "Jagt & Event", StringComparison.OrdinalIgnoreCase))
+        else if (string.Equals(data.Subtype, "Jagt & Event", StringComparison.OrdinalIgnoreCase))
         {
-            targetColor = "#EF4444"; // red
+            targetColor    = "#EF4444";
             targetPriority = "High";
         }
 
         var newCard = new KanbanEventCard
         {
-            GraphEventId = $"evt-{Guid.NewGuid()}",
-            MetadataId = Guid.NewGuid(),
-            Subject = _newSubject,
-            BodyContent = $"Nyt selskab oprettet direkte fra Godstavlen. Område: {_newArea}, Forplejning: {_newCatering}.",
-            ColorHex = targetColor,
-            Priority = targetPriority,
-            SectionKey = targetSection,
-            StartUtc = startDateTime,
-            EndUtc = endDateTime,
-            EventSubtype = _newSubtype,
-            GuestCount = _newGuestCount,
-            AssignedCoordinator = _isStaffView ? _newCoordinator : "Afventer godkendelse",
-            EstateArea = _newArea,
-            CateringOption = _newCatering,
-            Price = _newPrice > 0 ? _newPrice : null
+            GraphEventId        = $"evt-{Guid.NewGuid()}",
+            MetadataId          = Guid.NewGuid(),
+            Subject             = data.Subject,
+            BodyContent         = $"Nyt selskab oprettet direkte fra Godstavlen. Område: {data.Area}, Forplejning: {data.Catering}.",
+            ColorHex            = targetColor,
+            Priority            = targetPriority,
+            SectionKey          = targetSection,
+            StartUtc            = data.StartUtc,
+            EndUtc              = data.EndUtc,
+            EventSubtype        = data.Subtype,
+            GuestCount          = data.GuestCount,
+            AssignedCoordinator = _isStaffView ? data.Coordinator : "Afventer godkendelse",
+            EstateArea          = data.Area,
+            CateringOption      = data.Catering,
+            Price               = data.Price
         };
 
         await PostgresService.SaveEventAsync(newCard);
@@ -561,24 +485,10 @@
         _cards.Clear();
         _cards.AddRange(events);
 
-        _isCreateDrawerOpen = false;
-        
-        // Reset form
-        _newSubject = string.Empty;
-        _newDate = DateTime.Today;
-        _newStartTime = new TimeSpan(11, 0, 0);
-        _newEndTime = new TimeSpan(18, 0, 0);
-        _newArea = "Den Store Lade";
-        _newSubtype = "Bryllup";
-        _newGuestCount = 50;
-        _newCatering = "Gourmet Selskabsmenu";
-        _newPrice = 0;
-        _newCoordinator = "Sarah Jenkins";
-
-        _lastUpdatedMessage = _isStaffView 
+        _lastUpdatedMessage = _isStaffView
             ? $"[Succes] Selskabet '{newCard.Subject}' blev oprettet og lagt i kolonnen '{newCard.SectionKey}'."
             : $"[Succes] Forespørgsel om '{newCard.Subject}' blev indsendt til godkendelse.";
-            
+
         StateHasChanged();
     }
 }
