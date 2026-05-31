@@ -2,7 +2,7 @@
 
 ## 1. Booking Widget Availability
 - Prospective clients view availability on a public, embedded **Microsoft Bookings page**.
-- Bookings are mapped to specific estate venue resources (Grand Ballroom, Lakeside Pavilion, Rose Gardens).
+- Bookings are mapped to specific estate venue resources (Søparken, HovedBygnigen, Den Store Lade).
 - The public widget represents occupied slots using standard "busy" blocks, enforcing a **minimum 14-day lead time** and **maximum 365-day lead time**.
 - Buffer zones of **2 hours pre-event** (for catering setup) and **2 hours post-event** (for cleaning crews) are automatically injected as blockouts in Graph Outlook.
 

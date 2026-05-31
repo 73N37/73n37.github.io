@@ -369,12 +369,13 @@
         StateHasChanged();
     }
 
-    private async void OnStateChanged()
+    private void OnStateChanged()
     {
-        await InvokeAsync(async () =>
-        {
-            await LoadEventsAsync();
-        });
+        // Re-render the UI when shared state changes (dark mode, connection status, etc.)
+        // Do NOT call LoadEventsAsync here — that would cause an infinite loop since
+        // FetchAllEventsAsync itself modifies state (Cards, DidLastFetchSucceed) which
+        // would fire this handler again on every single fetch.
+        InvokeAsync(StateHasChanged);
     }
 
     public void Dispose()

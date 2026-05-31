@@ -294,7 +294,9 @@ public sealed class IntegrationStateContainer
         get => _cards;
         set
         {
-            _cards = value ?? [];
+            var newList = value ?? [];
+            if (ReferenceEquals(_cards, newList)) return;
+            _cards = newList;
             NotifyStateChanged();
         }
     }
