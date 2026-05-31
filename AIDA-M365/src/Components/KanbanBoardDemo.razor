@@ -259,19 +259,7 @@
     private int _startMinuteUtc;
 
     // Opret Selskab Form State variables
-    private bool _isCreateDrawerOpen;
     private bool _isStaffView = true;
-    
-    private string _newSubject = string.Empty;
-    private DateTime? _newDate = DateTime.Today;
-    private TimeSpan? _newStartTime = new TimeSpan(11, 0, 0);
-    private TimeSpan? _newEndTime = new TimeSpan(18, 0, 0);
-    private string _newArea = "Den Store Lade";
-    private string _newSubtype = "Bryllup";
-    private int _newGuestCount = 50;
-    private string _newCatering = "Gourmet Selskabsmenu";
-    private decimal _newPrice = 0;
-    private string _newCoordinator = "Sarah Jenkins";
 
     protected override async Task OnInitializedAsync()
     {
@@ -424,10 +412,10 @@
         };
         var options = new DialogOptions
         {
-            MaxWidth        = MaxWidth.Small,
-            FullWidth       = true,
-            CloseButton     = true,
-            BackdropClick   = true
+            MaxWidth             = MaxWidth.Small,
+            FullWidth            = true,
+            CloseButton          = true,
+            DisableBackdropClick = false
         };
 
         var title = _isStaffView ? "Opret Selskab" : "Send Forespørgsel om Reservation";
