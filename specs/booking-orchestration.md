@@ -24,7 +24,7 @@
 
 ## 3. Auto-Acknowledgement Template
 The acknowledgement email is standard responsive HTML incorporating cream/gold design assets:
-- **Sender**: Shared mailbox (`reservations@royalestate.com`)
+- **Sender**: Shared mailbox (`reservations@engelstoftegods.com`)
 - **Attachments**: Estate Brochure PDF and Terms sheet
 - **Subject**: "Royal Estate Reservation Request Received - [Client Name]"
 - **Body**: Custom summary indicating that their request has been received, and an event coordinator will review the booking slot manually.
