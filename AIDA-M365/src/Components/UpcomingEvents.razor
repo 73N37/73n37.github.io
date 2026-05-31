@@ -5,6 +5,7 @@
 @using MudBlazor
 @inject AIDA.M365.Services.IPostgresDatabaseService PostgresService
 @inject AIDA.M365.Services.IntegrationStateContainer StateContainer
+@inject IDialogService DialogService
 
 <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="pa-6" Style="background-color: #FAF9F6; min-height: 100vh; font-family: 'Playfair Display', 'Inter', sans-serif;">
     <MudStack Spacing="6">
@@ -34,6 +35,15 @@
                             Offentlig Tilgængelighed
                         </MudButton>
                     </MudButtonGroup>
+
+                    <!-- Switcher for Single vs Multi-Calendar -->
+                    <MudButton StartIcon="@(_showAllThreeCalendars ? Icons.Material.Filled.ViewStream : Icons.Material.Filled.CalendarViewMonth)" 
+                               Variant="Variant.Filled" 
+                               Color="Color.Primary" 
+                               OnClick="ToggleCalendarLayout" 
+                               Style="border-radius: 8px; background-color: #2C3E50; color: white; font-weight: bold; padding: 10px 20px;">
+                        @(_showAllThreeCalendars ? "Enkelt Kalender" : "Vis alle 3 kalendere")
+                    </MudButton>
 
                     @if (_isStaffView)
                     {
@@ -69,74 +79,184 @@
             <MudIconButton Icon="@Icons.Material.Filled.ChevronRight" Color="Color.Primary" OnClick="NextMonth" />
         </MudPaper>
 
-        <!-- Custom high-fidelity monthly calendar grid -->
-        <MudPaper Class="pa-4 rounded-lg" Outlined="true" Style="background-color: white;">
-            <!-- Day of Week Headers -->
-            <MudGrid Spacing="1" Class="mb-2">
-                @foreach (var dayName in _dayNames)
-                {
-                    <MudItem xs="1" Style="width: 14.28%; max-width: 14.28%; flex-basis: 14.28%;">
-                        <MudPaper Class="pa-2 text-center" Elevation="0" Style="background-color: #FAF9F6;">
-                            <MudText Typo="Typo.caption" Class="font-weight-bold" Style="color: #2C3E50;">@dayName</MudText>
-                        </MudPaper>
-                    </MudItem>
-                }
-            </MudGrid>
+        @if (!_showAllThreeCalendars)
+        {
+            <!-- Elegant Location Filtering Tabs -->
+            <MudTabs Elevation="0" Outlined="true" Class="rounded-lg mb-4" Style="background-color: white;" Centered="true">
+                <MudTabPanel Text="Samlet Oversigt" Icon="@Icons.Material.Filled.CalendarMonth" OnClick='() => FilterByLocation("")' />
+                <MudTabPanel Text="Den Store Lade" Icon="@Icons.Material.Filled.Home" OnClick='() => FilterByLocation("Den Store Lade")' />
+                <MudTabPanel Text="Hovedbygningen" Icon="@Icons.Material.Filled.AccountBalance" OnClick='() => FilterByLocation("Hovedbygningen")' />
+                <MudTabPanel Text="Søparken" Icon="@Icons.Material.Filled.Nature" OnClick='() => FilterByLocation("Søparken")' />
+            </MudTabs>
 
-            <!-- Calendar Days Grid -->
-            <MudGrid Spacing="1">
-                @foreach (var cell in _calendarCells)
-                {
-                    <MudItem xs="1" Style="width: 14.28%; max-width: 14.28%; flex-basis: 14.28%;">
-                        <MudPaper Class="pa-2 rounded-lg d-flex flex-column justify-between calendar-day-cell" 
-                                  Outlined="true" 
-                                  Style="@GetDayCellStyle(cell)"
-                                  Elevation="0"
-                                  @onclick="() => OnCellClicked(cell.Date)">
-                            <!-- Day Number -->
-                            <MudStack Row="true" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
-                                <MudText Typo="Typo.caption" 
-                                         Class="@(cell.IsCurrentMonth ? "font-weight-bold text-dark" : "text-muted")"
-                                         Style="@(cell.Date.Date == DateTime.Today ? "background-color: #D4AF37; color: white; padding: 2px 6px; border-radius: 50%;" : "")">
-                                    @cell.Date.Day
-                                </MudText>
-                            </MudStack>
+            <!-- Custom high-fidelity monthly calendar grid -->
+            <MudPaper Class="pa-4 rounded-lg" Outlined="true" Style="background-color: white;">
+                <!-- Day of Week Headers -->
+                <MudGrid Spacing="1" Class="mb-2">
+                    @foreach (var dayName in _dayNames)
+                    {
+                        <MudItem xs="1" Style="width: 14.28%; max-width: 14.28%; flex-basis: 14.28%;">
+                            <MudPaper Class="pa-2 text-center" Elevation="0" Style="background-color: #FAF9F6;">
+                                <MudText Typo="Typo.caption" Class="font-weight-bold" Style="color: #2C3E50;">@dayName</MudText>
+                            </MudPaper>
+                        </MudItem>
+                    }
+                </MudGrid>
 
-                            <!-- Events List inside Day Cell -->
-                            <div class="mt-2 d-flex flex-column gap-1" style="min-height: 80px;">
-                                @foreach (var card in cell.Cards)
-                                {
-                                    <div class="pa-2 rounded text-truncate hover-card" 
-                                         style="@GetCardStyle(card)"
-                                         @onclick="() => OpenEventDetails(card)"
-                                         @onclick:stopPropagation="true">
-                                        @if (_isStaffView)
+                <!-- Calendar Days Grid -->
+                <MudGrid Spacing="1">
+                    @foreach (var cell in _calendarCells)
+                    {
+                        <MudItem xs="1" Style="width: 14.28%; max-width: 14.28%; flex-basis: 14.28%;">
+                            <MudPaper Class="pa-2 rounded-lg d-flex flex-column justify-between calendar-day-cell" 
+                                      Outlined="true" 
+                                      Style="@GetDayCellStyle(cell)"
+                                      Elevation="0"
+                                      @onclick="() => OnCellClicked(cell.Date)">
+                                <!-- Day Number -->
+                                <MudStack Row="true" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+                                    <MudText Typo="Typo.caption" 
+                                             Class="@(cell.IsCurrentMonth ? "font-weight-bold text-dark" : "text-muted")"
+                                             Style="@(cell.Date.Date == DateTime.Today ? "background-color: #D4AF37; color: white; padding: 2px 6px; border-radius: 50%;" : "")">
+                                        @cell.Date.Day
+                                    </MudText>
+                                </MudStack>
+
+                                <!-- Events List inside Day Cell -->
+                                <div class="mt-2 d-flex flex-column gap-1" style="min-height: 80px;">
+                                    @foreach (var card in cell.Cards)
+                                    {
+                                        <div class="pa-2 rounded text-truncate hover-card" 
+                                             style="@GetCardStyle(card)"
+                                             @onclick="() => OpenEventDetails(card)"
+                                             @onclick:stopPropagation="true">
+                                            @if (_isStaffView)
+                                            {
+                                                <MudText Typo="Typo.caption" Class="font-weight-bold text-truncate d-block">
+                                                    @card.Subject
+                                                </MudText>
+                                                <MudText Typo="Typo.caption" Style="font-size: 0.7rem; color: #555;" Class="d-block text-truncate">
+                                                    <MudIcon Icon="@Icons.Material.Filled.People" Size="Size.Small" Style="font-size: 0.75rem; vertical-align: middle; margin-right: 2px;" />
+                                                    @card.GuestCount Gæster
+                                                </MudText>
+                                            }
+                                            else
+                                            {
+                                                <MudText Typo="Typo.caption" Class="font-weight-bold text-truncate d-block text-center" Style="font-style: italic; color: #555;">
+                                                    Reserveret
+                                                </MudText>
+                                                <MudText Typo="Typo.caption" Style="font-size: 0.65rem; color: #666;" Class="d-block text-center text-truncate">
+                                                    @card.EstateArea
+                                                </MudText>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            </MudPaper>
+                        </MudItem>
+                    }
+                </MudGrid>
+            </MudPaper>
+        }
+        else
+        {
+            <!-- Split Multi-Calendar Layout (3 location calendars sequential) -->
+            @foreach (var location in new[] { "Den Store Lade", "Hovedbygningen", "Søparken" })
+            {
+                var currentCells = GetCellsForLocation(location);
+                var borderAccent = location switch
+                {
+                    "Den Store Lade" => "border-top: 4px solid #D4AF37;", // Gold
+                    "Hovedbygningen" => "border-top: 4px solid #2C3E50;", // Indigo/Navy
+                    "Søparken" => "border-top: 4px solid #009688;", // Teal
+                    _ => "border-top: 4px solid #7F8C8D;"
+                };
+                var locationIcon = location switch
+                {
+                    "Den Store Lade" => Icons.Material.Filled.Home,
+                    "Hovedbygningen" => Icons.Material.Filled.AccountBalance,
+                    "Søparken" => Icons.Material.Filled.Nature,
+                    _ => Icons.Material.Filled.Place
+                };
+
+                <MudPaper Class="pa-4 rounded-lg mb-6 shadow-sm" Elevation="0" Style="@($"background-color: white; {borderAccent}")">
+                    <!-- Location Specific Header Banner -->
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-4">
+                        <MudIcon Icon="@locationIcon" Color="Color.Primary" Size="Size.Large" />
+                        <MudStack Spacing="0">
+                            <MudText Typo="Typo.h5" Class="font-weight-bold" Style="color: #2C3E50;">@location Kalender</MudText>
+                            <MudText Typo="Typo.caption" Class="text-muted">Engestofte Gods — Kalendervisning for @location</MudText>
+                        </MudStack>
+                    </MudStack>
+
+                    <!-- Day of Week Headers -->
+                    <MudGrid Spacing="1" Class="mb-2">
+                        @foreach (var dayName in _dayNames)
+                        {
+                            <MudItem xs="1" Style="width: 14.28%; max-width: 14.28%; flex-basis: 14.28%;">
+                                <MudPaper Class="pa-2 text-center" Elevation="0" Style="background-color: #FAF9F6;">
+                                    <MudText Typo="Typo.caption" Class="font-weight-bold" Style="color: #2C3E50;">@dayName</MudText>
+                                </MudPaper>
+                            </MudItem>
+                        }
+                    </MudGrid>
+
+                    <!-- Calendar Days Grid -->
+                    <MudGrid Spacing="1">
+                        @foreach (var cell in currentCells)
+                        {
+                            <MudItem xs="1" Style="width: 14.28%; max-width: 14.28%; flex-basis: 14.28%;">
+                                <MudPaper Class="pa-2 rounded-lg d-flex flex-column justify-between calendar-day-cell" 
+                                          Outlined="true" 
+                                          Style="@GetDayCellStyle(cell)"
+                                          Elevation="0"
+                                          @onclick="() => OnCellClicked(cell.Date, location)">
+                                    <!-- Day Number -->
+                                    <MudStack Row="true" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+                                        <MudText Typo="Typo.caption" 
+                                                 Class="@(cell.IsCurrentMonth ? "font-weight-bold text-dark" : "text-muted")"
+                                                 Style="@(cell.Date.Date == DateTime.Today ? "background-color: #D4AF37; color: white; padding: 2px 6px; border-radius: 50%;" : "")">
+                                            @cell.Date.Day
+                                        </MudText>
+                                    </MudStack>
+
+                                    <!-- Events List inside Day Cell -->
+                                    <div class="mt-2 d-flex flex-column gap-1" style="min-height: 80px;">
+                                        @foreach (var card in cell.Cards)
                                         {
-                                            <MudText Typo="Typo.caption" Class="font-weight-bold text-truncate d-block">
-                                                @card.Subject
-                                            </MudText>
-                                            <MudText Typo="Typo.caption" Style="font-size: 0.7rem; color: #555;" Class="d-block text-truncate">
-                                                <MudIcon Icon="@Icons.Material.Filled.People" Size="Size.Small" Style="font-size: 0.75rem; vertical-align: middle; margin-right: 2px;" />
-                                                @card.GuestCount Gæster
-                                            </MudText>
-                                        }
-                                        else
-                                        {
-                                            <MudText Typo="Typo.caption" Class="font-weight-bold text-truncate d-block text-center" Style="font-style: italic; color: #555;">
-                                                Reserveret
-                                            </MudText>
-                                            <MudText Typo="Typo.caption" Style="font-size: 0.65rem; color: #666;" Class="d-block text-center text-truncate">
-                                                @card.EstateArea
-                                            </MudText>
+                                            <div class="pa-2 rounded text-truncate hover-card" 
+                                                 style="@GetCardStyle(card)"
+                                                 @onclick="() => OpenEventDetails(card)"
+                                                 @onclick:stopPropagation="true">
+                                                @if (_isStaffView)
+                                                {
+                                                    <MudText Typo="Typo.caption" Class="font-weight-bold text-truncate d-block">
+                                                        @card.Subject
+                                                    </MudText>
+                                                    <MudText Typo="Typo.caption" Style="font-size: 0.7rem; color: #555;" Class="d-block text-truncate">
+                                                        <MudIcon Icon="@Icons.Material.Filled.People" Size="Size.Small" Style="font-size: 0.75rem; vertical-align: middle; margin-right: 2px;" />
+                                                        @card.GuestCount Gæster
+                                                    </MudText>
+                                                }
+                                                else
+                                                {
+                                                    <MudText Typo="Typo.caption" Class="font-weight-bold text-truncate d-block text-center" Style="font-style: italic; color: #555;">
+                                                        Reserveret
+                                                    </MudText>
+                                                    <MudText Typo="Typo.caption" Style="font-size: 0.65rem; color: #666;" Class="d-block text-center text-truncate">
+                                                        @card.EstateArea
+                                                    </MudText>
+                                                }
+                                            </div>
                                         }
                                     </div>
-                                }
-                            </div>
-                        </MudPaper>
-                    </MudItem>
-                }
-            </MudGrid>
-        </MudPaper>
+                                </MudPaper>
+                            </MudItem>
+                        }
+                    </MudGrid>
+                </MudPaper>
+            }
+        }
     </MudStack>
 </MudContainer>
 
@@ -190,11 +310,16 @@
 
                 <MudTextField @bind-Value="_editCoordinator" Label="Ansvarlig Koordinator" Variant="Variant.Outlined" Margin="Margin.Dense" />
 
-                <MudStack Row="true" Spacing="2" JustifyContent="JustifyContent.End" Class="mt-2">
-                    <MudButton Variant="Variant.Outlined" OnClick="() => _isDetailsEditing = false" Style="border-radius: 8px;">Annuller</MudButton>
-                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveEditedEvent" Style="background-color: #2C3E50; color: white; border-radius: 8px; font-weight: bold;">
-                        Gem Ændringer
+                <MudStack Row="true" Spacing="2" JustifyContent="JustifyContent.SpaceBetween" Class="mt-2">
+                    <MudButton Variant="Variant.Filled" Color="Color.Error" StartIcon="@Icons.Material.Filled.Delete" OnClick="() => DeleteEventAsync(_selectedCard)" Style="border-radius: 8px; font-weight: bold;">
+                        Slet Selskab
                     </MudButton>
+                    <MudStack Row="true" Spacing="2">
+                        <MudButton Variant="Variant.Outlined" OnClick="() => _isDetailsEditing = false" Style="border-radius: 8px;">Annuller</MudButton>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveEditedEvent" Style="background-color: #2C3E50; color: white; border-radius: 8px; font-weight: bold;">
+                            Gem Ændringer
+                        </MudButton>
+                    </MudStack>
                 </MudStack>
             }
             else
@@ -345,13 +470,22 @@
 
                 @if (_isStaffView)
                 {
-                    <MudButton StartIcon="@Icons.Material.Filled.Edit" 
-                               Variant="Variant.Filled" 
-                               Color="Color.Primary" 
-                               OnClick="EnableEditMode" 
-                               Style="border-radius: 8px; background-color: #2C3E50; color: white; font-weight: bold; margin-top: 10px;">
-                        Rediger Selskab
-                    </MudButton>
+                    <MudStack Row="true" Spacing="2" Class="mt-4" Style="width: 100%;">
+                        <MudButton StartIcon="@Icons.Material.Filled.Delete" 
+                                   Variant="Variant.Filled" 
+                                   Color="Color.Error" 
+                                   OnClick="() => DeleteEventAsync(_selectedCard)" 
+                                   Style="border-radius: 8px; font-weight: bold; flex-grow: 1;">
+                            Slet Selskab
+                        </MudButton>
+                        <MudButton StartIcon="@Icons.Material.Filled.Edit" 
+                                   Variant="Variant.Filled" 
+                                   Color="Color.Primary" 
+                                   OnClick="EnableEditMode" 
+                                   Style="border-radius: 8px; background-color: #2C3E50; color: white; font-weight: bold; flex-grow: 1;">
+                            Rediger Selskab
+                        </MudButton>
+                    </MudStack>
                 }
             }
         </MudStack>
@@ -469,6 +603,8 @@
     private DateTime _currentDate = DateTime.Today;
     private bool _isStaffView = true;
     private string? _logMessage;
+    private string _activeLocationFilter = string.Empty;
+    private bool _showAllThreeCalendars = false;
 
     private readonly string[] _dayNames = ["Man", "Tir", "Ons", "Tor", "Fre", "Lør", "Søn"];
     private readonly List<CalendarDayCell> _calendarCells = [];
@@ -537,10 +673,9 @@
         StateContainer.OnChange -= OnStateChanged;
     }
 
-    private void GenerateCalendarGrid()
+    private List<CalendarDayCell> GetCellsForLocation(string? location)
     {
-        _calendarCells.Clear();
-
+        var cells = new List<CalendarDayCell>();
         var firstDayOfMonth = new DateTime(_currentDate.Year, _currentDate.Month, 1);
         
         // Find how many padding cells we need at start (adjusting for Mon-Sun grid)
@@ -552,16 +687,24 @@
         {
             var date = startDay.AddDays(i);
             
-            // Link matching events falling on this date
-            var dayEvents = _allCards.Where(c => c.StartUtc.Date == date.Date).ToList();
+            // Link matching events falling on this date and matching location if filtered
+            var dayEvents = _allCards.Where(c => c.StartUtc.Date == date.Date &&
+                (string.IsNullOrEmpty(location) || string.Equals(c.EstateArea, location, StringComparison.OrdinalIgnoreCase))).ToList();
 
-            _calendarCells.Add(new CalendarDayCell
+            cells.Add(new CalendarDayCell
             {
                 Date = date,
                 IsCurrentMonth = date.Month == _currentDate.Month,
                 Cards = dayEvents
             });
         }
+        return cells;
+    }
+
+    private void GenerateCalendarGrid()
+    {
+        _calendarCells.Clear();
+        _calendarCells.AddRange(GetCellsForLocation(_activeLocationFilter));
     }
 
     private string GetDayCellStyle(CalendarDayCell cell)
@@ -607,19 +750,54 @@
         StateHasChanged();
     }
 
-    private void OpenEventDetails(KanbanEventCard card)
+    private void ToggleCalendarLayout()
     {
-        if (!_isStaffView)
+        _showAllThreeCalendars = !_showAllThreeCalendars;
+        if (!_showAllThreeCalendars)
         {
-            // Public view sees a simple busy blocker notification
-            _logMessage = $"[Tilgængelighed] Området {card.EstateArea} er reserveret på dette tidspunkt. Kontakt os for at forespørge om en booking.";
-            return;
+            GenerateCalendarGrid();
+        }
+        StateHasChanged();
+    }
+
+    private void FilterByLocation(string location)
+    {
+        _activeLocationFilter = location;
+        GenerateCalendarGrid();
+        StateHasChanged();
+    }
+
+    private async Task OpenEventDetails(KanbanEventCard card)
+    {
+        _logMessage = $"[Database] Henter seneste detaljer for '{card.Subject}' fra databasen...";
+        StateHasChanged();
+
+        try
+        {
+            // Pull the latest, fresh data from the database spejling to ensure real-time client views
+            var events = await PostgresService.FetchAllEventsAsync();
+            var freshCard = events.FirstOrDefault(e => e.GraphEventId == card.GraphEventId);
+            if (freshCard != null)
+            {
+                _selectedCard = freshCard;
+                _logMessage = $"[Succes] Opdaterede detaljer for '{freshCard.Subject}' direkte fra databasen.";
+            }
+            else
+            {
+                _selectedCard = card;
+                _logMessage = $"[Info] Viser selskab '{card.Subject}' fra lokal hukommelse.";
+            }
+        }
+        catch (Exception)
+        {
+            _selectedCard = card;
+            _logMessage = $"[Advarsel] Kunne ikke forbinde til databasen. Viser lokal kopi af '{card.Subject}'.";
         }
 
-        _selectedCard = card;
         _isDetailsEditing = false; // Reset to details mode
         CancelEditSubevent();      // Reset subevent form
         _isDrawerOpen = true;
+        StateHasChanged();
     }
 
     private void EnableEditMode()
@@ -790,7 +968,7 @@
         _newDate = DateTime.Today;
         _newStartTime = new TimeSpan(11, 0, 0);
         _newEndTime = new TimeSpan(18, 0, 0);
-        _newArea = "Den Store Lade";
+        _newArea = string.IsNullOrWhiteSpace(_activeLocationFilter) ? "Den Store Lade" : _activeLocationFilter;
         _newSubtype = "Bryllup";
         _newGuestCount = 100;
         _newCatering = "Gourmet Selskabsmenu";
@@ -803,11 +981,16 @@
 
     private void OnCellClicked(DateTime date)
     {
+        OnCellClicked(date, _activeLocationFilter);
+    }
+
+    private void OnCellClicked(DateTime date, string? location)
+    {
         _newSubject = string.Empty;
         _newDate = date;
         _newStartTime = new TimeSpan(11, 0, 0);
         _newEndTime = new TimeSpan(18, 0, 0);
-        _newArea = "Den Store Lade";
+        _newArea = string.IsNullOrWhiteSpace(location) ? "Den Store Lade" : location;
         _newSubtype = "Bryllup";
         _newGuestCount = 100;
         _newCatering = "Gourmet Selskabsmenu";
@@ -939,6 +1122,27 @@
     {
         _currentDate = _currentDate.AddMonths(1);
         GenerateCalendarGrid();
+    }
+
+    private async Task DeleteEventAsync(KanbanEventCard? card)
+    {
+        if (card is null) return;
+
+        bool? confirmed = await DialogService.ShowMessageBox(
+            "Slet Selskab",
+            $"Vil du slette selskabet '{card.Subject}'? Denne handling kan ikke fortrydes.",
+            yesText: "Slet",
+            cancelText: "Annuller"
+        );
+
+        if (confirmed == true)
+        {
+            await PostgresService.DeleteEventAsync(card.GraphEventId);
+            _isDrawerOpen = false;
+            _selectedCard = null;
+            _logMessage = $"[Succes] Selskabet '{card.Subject}' blev slettet fra database og kalender.";
+            await LoadEventsAsync();
+        }
     }
 
     private void SimulatePdfExport()

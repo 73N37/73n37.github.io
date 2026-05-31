@@ -6,6 +6,7 @@
 @inject IEventCommandCenterService EventCommandCenterService
 @inject ISnackbar Snackbar
 @inject ILogger<KanbanBoard> Logger
+@inject IDialogService DialogService
 
 <MudPaper Class="position-relative pa-0" Elevation="0" Style="background: transparent;">
     @if (!string.IsNullOrWhiteSpace(_errorMessage))
@@ -303,9 +304,12 @@
 
                 <MudDivider Style="background: rgba(255,255,255,0.06);" />
 
-                <MudStack Row="true" JustifyContent="JustifyContent.End" Spacing="2">
-                    <MudButton Variant="Variant.Outlined" Color="Color.Default" OnClick="CloseEditDrawer" Style="border-radius: 8px;">Annuller</MudButton>
-                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveEditDetailsAsync" Style="border-radius: 8px; font-weight: bold;">Gem Ændringer</MudButton>
+                <MudStack Row="true" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center" Style="width: 100%;">
+                    <MudButton Variant="Variant.Filled" Color="Color.Error" StartIcon="@Icons.Material.Filled.Delete" OnClick="DeleteEventAsync" Style="border-radius: 8px; font-weight: bold;">Slet Selskab</MudButton>
+                    <MudStack Row="true" Spacing="2">
+                        <MudButton Variant="Variant.Outlined" Color="Color.Default" OnClick="CloseEditDrawer" Style="border-radius: 8px;">Annuller</MudButton>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveEditDetailsAsync" Style="border-radius: 8px; font-weight: bold;">Gem Ændringer</MudButton>
+                    </MudStack>
                 </MudStack>
             </MudStack>
         }
@@ -375,6 +379,9 @@
 
     [Parameter]
     public EventCallback<KanbanSectionDefinition> SectionDeleted { get; set; }
+
+    [Parameter]
+    public EventCallback<KanbanEventCard> CardDeleted { get; set; }
 
     private readonly HashSet<string> _updatingCardIds = new();
     private string? _errorMessage;
@@ -608,6 +615,31 @@
         }
 
         StateHasChanged();
+    }
+
+    private async Task DeleteEventAsync()
+    {
+        if (_editingCard is null) return;
+
+        bool? result = await DialogService.ShowMessageBox(
+            "Slet Selskab",
+            $"Er du sikker på, at du vil slette selskabet '{_editingCard.Subject}'? Denne handling vil fjerne selskabet permanent.",
+            yesText: "Slet", cancelText: "Annuller");
+
+        if (result == true)
+        {
+            var cardToDelete = _editingCard;
+            _editDrawerOpen = false;
+            _editingCard = null;
+            CancelEditSubevent();
+
+            if (CardDeleted.HasDelegate)
+            {
+                await CardDeleted.InvokeAsync(cardToDelete);
+            }
+            
+            StateHasChanged();
+        }
     }
 
     private void StartEditSubevent(Subevent sub)

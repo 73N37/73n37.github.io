@@ -120,7 +120,7 @@
         }
 
         <!-- Kanban Board Component -->
-        <KanbanBoard Sections="_sections" Cards="_cards" CardUpdated="OnCardUpdatedAsync" SectionDeleted="OnSectionDeletedAsync" />
+        <KanbanBoard Sections="_sections" Cards="_cards" CardUpdated="OnCardUpdatedAsync" SectionDeleted="OnSectionDeletedAsync" CardDeleted="OnCardDeletedAsync" />
     </MudStack>
 </MudContainer>
 
@@ -388,18 +388,26 @@
         foreach (var card in _cards)
         {
             if (card.GraphEventId == "event-fail") continue; // Exclude mock error card
-            double basePrice = 12000;
-            if (card.EventSubtype == "Wedding" || card.EventSubtype == "Bryllup") basePrice = 35000;
-            else if (card.EventSubtype == "Birthday" || card.EventSubtype == "Privat Fest") basePrice = 18000;
-            else if (card.EventSubtype == "Conference" || card.EventSubtype == "Konference") basePrice = 15000;
-            else if (card.EventSubtype == "Jagt & Event") basePrice = 25000;
 
-            double perGuestPrice = 450;
-            if (card.CateringOption == "Fine Dining" || card.CateringOption == "Gourmet Selskabsmenu") perGuestPrice = 1250;
-            else if (card.CateringOption == "Buffet & Mocktails" || card.CateringOption == "Konference-dagsmenu") perGuestPrice = 650;
-            else if (card.CateringOption == "Champagne Brunch" || card.CateringOption == "Brunch & Champagne") perGuestPrice = 850;
+            if (card.Price.HasValue)
+            {
+                revenue += (double)card.Price.Value;
+            }
+            else
+            {
+                double basePrice = 12000;
+                if (card.EventSubtype == "Wedding" || card.EventSubtype == "Bryllup") basePrice = 35000;
+                else if (card.EventSubtype == "Birthday" || card.EventSubtype == "Privat Fest") basePrice = 18000;
+                else if (card.EventSubtype == "Conference" || card.EventSubtype == "Konference") basePrice = 15000;
+                else if (card.EventSubtype == "Jagt & Event") basePrice = 25000;
 
-            revenue += basePrice + (card.GuestCount * perGuestPrice);
+                double perGuestPrice = 450;
+                if (card.CateringOption == "Fine Dining" || card.CateringOption == "Gourmet Selskabsmenu") perGuestPrice = 1250;
+                else if (card.CateringOption == "Buffet & Mocktails" || card.CateringOption == "Konference-dagsmenu") perGuestPrice = 650;
+                else if (card.CateringOption == "Champagne Brunch" || card.CateringOption == "Brunch & Champagne") perGuestPrice = 850;
+
+                revenue += basePrice + (card.GuestCount * perGuestPrice);
+            }
         }
         return $"{revenue:N0} DKK";
     }
@@ -474,6 +482,18 @@
 
         _sections.Remove(section);
         _lastUpdatedMessage = $"Slettede kolonnen: {section.Title}";
+        StateHasChanged();
+    }
+
+    private async Task OnCardDeletedAsync(KanbanEventCard card)
+    {
+        await PostgresService.DeleteEventAsync(card.GraphEventId);
+
+        var events = await PostgresService.FetchAllEventsAsync();
+        _cards.Clear();
+        _cards.AddRange(events);
+
+        _lastUpdatedMessage = $"[System] Selskabet '{card.Subject}' blev slettet permanent.";
         StateHasChanged();
     }
 
