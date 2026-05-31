@@ -132,6 +132,34 @@ public sealed class IntegrationStateContainer
         }
     }
 
+    private bool _useSupabase = false;
+    public bool UseSupabase
+    {
+        get => _useSupabase;
+        set
+        {
+            if (_useSupabase != value)
+            {
+                _useSupabase = value;
+                NotifyStateChanged();
+            }
+        }
+    }
+
+    private string _supabaseAnonKey = "";
+    public string SupabaseAnonKey
+    {
+        get => _supabaseAnonKey;
+        set
+        {
+            if (_supabaseAnonKey != value)
+            {
+                _supabaseAnonKey = value;
+                NotifyStateChanged();
+            }
+        }
+    }
+
     public bool IsSystemHealthy => IsM365Connected;
 
     private System.Collections.Generic.List<AIDA.M365.Models.KanbanEventCard> _cards = [];

@@ -26,6 +26,32 @@ public sealed class PostgresDatabaseService : IPostgresDatabaseService
         _logger = logger;
     }
 
+    private void PrepareHttpClientHeaders()
+    {
+        _httpClient.DefaultRequestHeaders.Remove("apikey");
+        _httpClient.DefaultRequestHeaders.Remove("Authorization");
+        _httpClient.DefaultRequestHeaders.Remove("Prefer");
+
+        if (_stateContainer.UseSupabase && !string.IsNullOrWhiteSpace(_stateContainer.SupabaseAnonKey))
+        {
+            _httpClient.DefaultRequestHeaders.Add("apikey", _stateContainer.SupabaseAnonKey);
+            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_stateContainer.SupabaseAnonKey}");
+        }
+    }
+
+    private string GetRequestUrl(string path)
+    {
+        if (_stateContainer.UseSupabase)
+        {
+            var host = _stateContainer.PostgresHost.Replace("http://", "").Replace("https://", "").TrimEnd('/');
+            return $"https://{host}/rest/v1/{path}";
+        }
+        else
+        {
+            return $"http://{_stateContainer.PostgresHost}:3000/{path}";
+        }
+    }
+
     public async Task<List<KanbanEventCard>> FetchAllEventsAsync(CancellationToken cancellationToken = default)
     {
         if (!_stateContainer.IsPostgresConnected)
@@ -37,10 +63,11 @@ public sealed class PostgresDatabaseService : IPostgresDatabaseService
 
         try
         {
-            var requestUrl = $"http://{_stateContainer.PostgresHost}:3000/events";
-            _logger.LogInformation("[PostgreSQL] Fetching events from DigitalOcean at {RequestUrl}", requestUrl);
+            PrepareHttpClientHeaders();
+            var requestUrl = GetRequestUrl("events");
+            _logger.LogInformation("[PostgreSQL] Fetching events from database at {RequestUrl}", requestUrl);
 
-            // Attempt to fetch from real PostgreSQL API REST endpoint
+            // Attempt to fetch from real API REST endpoint
             using var response = await _httpClient.GetAsync(requestUrl, cancellationToken);
             if (response.IsSuccessStatusCode)
             {
@@ -57,7 +84,7 @@ public sealed class PostgresDatabaseService : IPostgresDatabaseService
         catch (Exception ex)
         {
             _stateContainer.DidLastFetchSucceed = false;
-            _logger.LogWarning(ex, "[PostgreSQL] DigitalOcean host is currently offline or unreachable. Falling back to local cache.");
+            _logger.LogWarning(ex, "[PostgreSQL] Host is currently offline or unreachable. Falling back to local cache.");
         }
 
         return _stateContainer.Cards;
@@ -82,8 +109,13 @@ public sealed class PostgresDatabaseService : IPostgresDatabaseService
 
         try
         {
-            var requestUrl = $"http://{_stateContainer.PostgresHost}:3000/events";
-            _logger.LogInformation("[PostgreSQL] Upserting event to DigitalOcean PostgreSQL at {RequestUrl}", requestUrl);
+            PrepareHttpClientHeaders();
+            if (_stateContainer.UseSupabase)
+            {
+                _httpClient.DefaultRequestHeaders.Add("Prefer", "resolution=merge-duplicates");
+            }
+            var requestUrl = GetRequestUrl("events");
+            _logger.LogInformation("[PostgreSQL] Upserting event to database at {RequestUrl}", requestUrl);
 
             using var response = await _httpClient.PostAsJsonAsync(requestUrl, card, cancellationToken);
             response.EnsureSuccessStatusCode();
@@ -91,7 +123,14 @@ public sealed class PostgresDatabaseService : IPostgresDatabaseService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[PostgreSQL] Synkronisering mislykkedes til DigitalOcean. Gemt lokalt i sandkasse.");
+            _logger.LogError(ex, "[PostgreSQL] Synkronisering mislykkedes til databasen. Gemt lokalt i sandkasse.");
+        }
+        finally
+        {
+            if (_stateContainer.UseSupabase)
+            {
+                _httpClient.DefaultRequestHeaders.Remove("Prefer");
+            }
         }
     }
 
@@ -112,8 +151,9 @@ public sealed class PostgresDatabaseService : IPostgresDatabaseService
 
         try
         {
-            var requestUrl = $"http://{_stateContainer.PostgresHost}:3000/events?id=eq.{graphEventId}";
-            _logger.LogInformation("[PostgreSQL] Deleting event from DigitalOcean PostgreSQL at {RequestUrl}", requestUrl);
+            PrepareHttpClientHeaders();
+            var requestUrl = GetRequestUrl($"events?id=eq.{graphEventId}");
+            _logger.LogInformation("[PostgreSQL] Deleting event from database at {RequestUrl}", requestUrl);
 
             using var response = await _httpClient.DeleteAsync(requestUrl, cancellationToken);
             response.EnsureSuccessStatusCode();
@@ -121,7 +161,7 @@ public sealed class PostgresDatabaseService : IPostgresDatabaseService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[PostgreSQL] Kunne ikke slette på DigitalOcean. Fjernet lokalt.");
+            _logger.LogError(ex, "[PostgreSQL] Kunne ikke slette på database. Fjernet lokalt.");
         }
     }
 
@@ -148,8 +188,9 @@ public sealed class PostgresDatabaseService : IPostgresDatabaseService
 
         try
         {
-            var requestUrl = $"http://{_stateContainer.PostgresHost}:3000/events?id=eq.{graphEventId}";
-            _logger.LogInformation("[PostgreSQL] Updating section position on DigitalOcean at {RequestUrl}", requestUrl);
+            PrepareHttpClientHeaders();
+            var requestUrl = GetRequestUrl($"events?id=eq.{graphEventId}");
+            _logger.LogInformation("[PostgreSQL] Updating section position on database at {RequestUrl}", requestUrl);
 
             using var response = await _httpClient.PatchAsJsonAsync(requestUrl, new
             {
@@ -161,7 +202,7 @@ public sealed class PostgresDatabaseService : IPostgresDatabaseService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[PostgreSQL] Kunne ikke opdatere position på DigitalOcean.");
+            _logger.LogError(ex, "[PostgreSQL] Kunne ikke opdatere position på database.");
         }
     }
 
