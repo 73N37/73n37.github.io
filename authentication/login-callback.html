@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Fuldfører login...</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <!--
+        MSAL Authentication Redirect Handler
+        =====================================
+        This file is the registered OAuth2 redirect_uri for this Blazor WASM app.
+        It must be served as a real static file at:
+            https://73n37.github.io/authentication/login-callback
+
+        How it works:
+        1. After the user logs in at login.microsoftonline.com, Microsoft
+           redirects back to THIS page with ?code=...&state=... parameters.
+        2. This page loads the Blazor framework, which initialises MSAL.
+        3. MSAL detects the auth response in the URL and completes the
+           token exchange silently.
+        4. MSAL then redirects the user to the original page they came from.
+
+        IMPORTANT: GitHub Pages serves 404.html for unknown routes, but
+        this file exists as a real file, so it is served directly.
+        The 404.html redirect must NOT intercept this URL - see 404.html.
+    -->
+
+    <!-- Prevent 404.html from mangling the auth callback URL -->
+    <script type="text/javascript">
+        // Mark this as an auth callback so 404.html skips it
+        sessionStorage.setItem('msal_callback', 'true');
+    </script>
+
+    <base href="/" />
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" rel="stylesheet" />
+    <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
+    <link href="css/app.css" rel="stylesheet" />
+</head>
+<body>
+    <div id="app">
+        <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:100vh;background:#FAF9F6;font-family:'Roboto',sans-serif;">
+            <div style="width:48px;height:48px;border:4px solid #f3f3f3;border-top:4px solid #D4AF37;border-radius:50%;animation:spin 1s linear infinite;"></div>
+            <p style="margin-top:20px;color:#2C3E50;font-size:1.1rem;font-weight:500;">Fuldfører login...</p>
+            <p style="color:#7F8C8D;font-size:0.85rem;margin-top:4px;">Forbinder til Microsoft 365</p>
+            <style>
+                @keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+            </style>
+        </div>
+    </div>
+    <div id="blazor-error-ui" style="display:none">
+        En uventet fejl opstod.
+        <a href="">Genindlæs</a>
+    </div>
+    <script src="_framework/blazor.webassembly.js"></script>
+    <script src="_content/Microsoft.Authentication.WebAssembly.Msal/AuthenticationService.js"></script>
+    <script src="_content/MudBlazor/MudBlazor.min.js"></script>
+</body>
+</html>
