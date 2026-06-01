@@ -46,7 +46,27 @@ jobs:
           
           echo "Configuring index.html base href to: $BASE_HREF"
           sed -i "s|<base href=\"/\" />|<base href=\"$BASE_HREF\" />|g" release/wwwroot/index.html
-          
+
+          # ── MSAL Auth Callback Pages ────────────────────────────────────────
+          # Update base href in authentication callback pages too.
+          # These are real static HTML files (not SPA routes) that GitHub Pages
+          # serves directly when Microsoft redirects back after login.
+          if [ -f "release/wwwroot/authentication/login-callback.html" ]; then
+            sed -i "s|<base href=\"/\" />|<base href=\"$BASE_HREF\" />|g" release/wwwroot/authentication/login-callback.html
+            echo "Updated base href in login-callback.html"
+          fi
+          if [ -f "release/wwwroot/authentication/logout-callback.html" ]; then
+            sed -i "s|<base href=\"/\" />|<base href=\"$BASE_HREF\" />|g" release/wwwroot/authentication/logout-callback.html
+            echo "Updated base href in logout-callback.html"
+          fi
+
+          # ── GitHub Pages Workaround for MSAL Redirect URIs ──────────────────
+          # GitHub Pages serves authentication/login-callback.html when the browser
+          # requests /authentication/login-callback (it tries .html extension automatically).
+          # This is the registered redirect_uri in Azure Entra ID:
+          #   https://73n37.github.io/authentication/login-callback
+          # No additional configuration is needed — GitHub Pages handles it.
+
           # Create .nojekyll to prevent GitHub from blocking Blazor framework files starting with underscore
           touch release/wwwroot/.nojekyll
 
