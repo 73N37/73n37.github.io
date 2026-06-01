@@ -1,6 +1,7 @@
 @page "/authentication/{action}"
 @using Microsoft.AspNetCore.Components.WebAssembly.Authentication
 @inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
 
 <RemoteAuthenticatorView Action="@Action" OnLogInSucceeded="OnLoggedIn">
     <LoggingIn>
@@ -17,15 +18,38 @@
         </MudStack>
     </CompletingLoggingIn>
     <LogInFailed>
-        @{
-            // MSAL occasionally throws '"undefined" is not valid JSON' on first
-            // redirect due to stale session storage. Clear it and retry automatically.
-            ClearMsalSessionStorage();
-        }
-        <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Style="height:100vh; background:#FAF9F6;">
-            <MudProgressCircular Color="Color.Warning" Indeterminate="true" Size="Size.Large" />
-            <MudText Typo="Typo.h6" Style="color:#2C3E50; margin-top:16px;">Prøver igen…</MudText>
-            <MudText Typo="Typo.caption" Style="color:#7F8C8D;">Rydder session og forsøger login igen</MudText>
+        <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Style="height:100vh; background:#FAF9F6; padding: 24px;">
+            <MudPaper Class="pa-8 rounded-lg text-center" Elevation="4" Style="max-width: 500px; border-top: 4px solid #E74C3C; background: white;">
+                <MudIcon Icon="@Icons.Material.Filled.ErrorOutline" Style="color: #E74C3C; font-size: 3.5rem;" />
+                <MudText Typo="Typo.h5" Class="font-weight-bold mt-4" Style="color: #2C3E50;">Login mislykkedes</MudText>
+                
+                <MudText Typo="Typo.body2" Class="my-4" Style="color: #7F8C8D; line-height: 1.6;">
+                    Der opstod en fejl under godkendelsen med Microsoft. Dette skyldes normalt en udløbet browser-session eller ændrede kontotilladelser.
+                </MudText>
+
+                @if (!string.IsNullOrWhiteSpace(context))
+                {
+                    <MudAlert Severity="Severity.Error" Dense="true" Class="my-4 text-left font-monospace" Style="font-size: 0.8rem; border-radius: 6px; color: #E74C3C; background: rgba(231,76,60,0.06); border: 1px solid rgba(231,76,60,0.15);">
+                        @context
+                    </MudAlert>
+                }
+
+                <MudStack Row="true" Spacing="2" Class="mt-6 justify-center">
+                    <MudButton Variant="Variant.Filled" 
+                               Color="Color.Primary" 
+                               OnClick="RydOgProevIgen"
+                               StartIcon="@Icons.Material.Filled.Refresh"
+                               Style="border-radius: 8px; font-weight: 600; background: #D4AF37; color: white; padding: 8px 16px;">
+                        Ryd login-cache og prøv igen
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined" 
+                               Color="Color.Secondary" 
+                               Href="/home"
+                               Style="border-radius: 8px; font-weight: 600; padding: 8px 16px;">
+                        Annuller
+                    </MudButton>
+                </MudStack>
+            </MudPaper>
         </MudStack>
     </LogInFailed>
     <LogOut>
@@ -45,15 +69,47 @@
         Navigation.NavigateTo("/home", replace: true);
     }
 
-    /// <summary>
-    /// Clears MSAL-related session storage keys that can get into a bad state
-    /// (e.g. contain "undefined" which fails JSON.parse). Then redirects to
-    /// /authentication/login to trigger a fresh login attempt.
-    /// </summary>
-    private void ClearMsalSessionStorage()
+    protected override async Task OnParametersSetAsync()
     {
-        // This runs server-side via Blazor — we use NavigationManager to redirect.
-        // The actual sessionStorage.clear() happens in login-callback.html.
-        Navigation.NavigateTo("/authentication/login", replace: true);
+        if (string.Equals(Action, "login-failed", StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                // Detect if we have already attempted an automatic cache-clearing retry
+                var retryFlag = await JSRuntime.InvokeAsync<string>("sessionStorage.getItem", "aida_login_retry");
+                if (retryFlag != "true")
+                {
+                    Console.WriteLine("[AIDA] First login failure detected. Retrying silently once with clean cache...");
+                    await JSRuntime.InvokeVoidAsync("sessionStorage.setItem", "aida_login_retry", "true");
+                    await JSRuntime.InvokeVoidAsync("clearMsalCache");
+                    Navigation.NavigateTo("/authentication/login", forceLoad: true);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("[AIDA] Failed to perform auto-retry check: " + ex.Message);
+            }
+        }
+        else if (string.Equals(Action, "login", StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                // Reset the retry flag when starting a fresh user-initiated login
+                await JSRuntime.InvokeVoidAsync("sessionStorage.removeItem", "aida_login_retry");
+            }
+            catch { /* ignore */ }
+        }
+    }
+
+    private async Task RydOgProevIgen()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("clearMsalCache");
+            await JSRuntime.InvokeVoidAsync("sessionStorage.removeItem", "aida_login_retry");
+        }
+        catch { /* ignore */ }
+
+        Navigation.NavigateTo("/authentication/login", forceLoad: true);
     }
 }
