@@ -7,6 +7,7 @@
 @inject AIDA.M365.Services.IntegrationStateContainer StateContainer
 @inject IDialogService DialogService
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
 
 <MudContainer MaxWidth="MaxWidth.False" Class="pa-6" Style="background: transparent;">
     <MudStack Spacing="6">
@@ -123,7 +124,7 @@
                     {
                         <MudButton Variant="Variant.Filled" Size="Size.Small"
                                    StartIcon="@Icons.Material.Filled.Refresh"
-                                   Href="/authentication/logout"
+                                   OnClick="ReconnectWithoutLogout"
                                    Style="margin-top:8px; background:#E74C3C; color:white; border-radius:6px; font-weight:600; width:100%; font-size:0.75rem;">
                             Genforbind Kalender
                         </MudButton>
@@ -147,7 +148,7 @@
                     </MudStack>
                     <MudButton Variant="Variant.Filled"
                                StartIcon="@Icons.Material.Filled.Sync"
-                               Href="/authentication/logout"
+                               OnClick="ReconnectWithoutLogout"
                                Style="background:white; color:#E74C3C; font-weight:700; border-radius:8px; white-space:nowrap; flex-shrink:0;">
                         Genforbind
                     </MudButton>
@@ -724,6 +725,19 @@
             : $"[Succes] Forespørgsel om '{newCard.Subject}' blev indsendt til godkendelse.";
 
         StateHasChanged();
+    }
+
+    private async Task ReconnectWithoutLogout()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("clearMsalCache");
+            NavigationManager.NavigateTo("/authentication/login", forceLoad: true);
+        }
+        catch
+        {
+            NavigationManager.NavigateTo("/authentication/login", forceLoad: true);
+        }
     }
 }
 

@@ -73,7 +73,8 @@ public sealed class GraphCalendarService : IGodsCalendarService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "[Graph] Failed to fetch calendar events.");
+            _logger.LogError(ex, "[Graph] Failed to fetch calendar events.");
+            throw;
         }
 
         return result;
@@ -110,7 +111,7 @@ public sealed class GraphCalendarService : IGodsCalendarService
         catch (Exception ex)
         {
             _logger.LogError(ex, "[Graph] Failed to create event '{Subject}'.", card.Subject);
-            return null;
+            throw;
         }
     }
 
@@ -148,6 +149,7 @@ public sealed class GraphCalendarService : IGodsCalendarService
         catch (Exception ex)
         {
             _logger.LogError(ex, "[Graph] Failed to update event {Id}.", card.GraphEventId);
+            throw;
         }
     }
 
@@ -198,6 +200,7 @@ public sealed class GraphCalendarService : IGodsCalendarService
         catch (Exception ex)
         {
             _logger.LogError(ex, "[Graph] Failed to delete event {Id}.", graphEventId);
+            throw;
         }
     }
 

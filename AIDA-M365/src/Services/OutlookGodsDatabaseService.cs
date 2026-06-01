@@ -142,10 +142,16 @@ public sealed class OutlookGodsDatabaseService : IGodsDatabaseService
                 await _calendar.UpdateEventAsync(card, cancellationToken);
                 _logger.LogInformation("[Outlook DB] Updated Outlook event {Id}.", card.GraphEventId);
             }
+
+            // Mark connection as healthy since the save succeeded
+            _stateContainer.IsOutlookConnected = true;
+            _stateContainer.DidLastFetchSucceed = true;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "[Outlook DB] Failed to sync '{Subject}' to Outlook.", card.Subject);
+            _stateContainer.IsOutlookConnected = false;
+            _stateContainer.DidLastFetchSucceed = false;
         }
 
         _stateContainer.NotifyStateChanged();
@@ -167,8 +173,20 @@ public sealed class OutlookGodsDatabaseService : IGodsDatabaseService
         // Only call Graph if this is a real Outlook ID (not a local placeholder)
         if (!graphEventId.StartsWith("evt-", StringComparison.Ordinal) && await IsAuthenticatedAsync())
         {
-            await _calendar.DeleteEventAsync(graphEventId, cancellationToken);
-            _logger.LogInformation("[Outlook DB] Deleted Outlook event {Id}.", graphEventId);
+            try
+            {
+                await _calendar.DeleteEventAsync(graphEventId, cancellationToken);
+                _logger.LogInformation("[Outlook DB] Deleted Outlook event {Id}.", graphEventId);
+                _stateContainer.IsOutlookConnected = true;
+                _stateContainer.DidLastFetchSucceed = true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[Outlook DB] Failed to delete Outlook event {Id}.", graphEventId);
+                _stateContainer.IsOutlookConnected = false;
+                _stateContainer.DidLastFetchSucceed = false;
+                _stateContainer.NotifyStateChanged();
+            }
         }
     }
 
@@ -203,10 +221,16 @@ public sealed class OutlookGodsDatabaseService : IGodsDatabaseService
                 await _calendar.UpdateEventAsync(card, cancellationToken);
             else
                 await _calendar.UpdateEventTimeAsync(graphEventId, start, end, cancellationToken);
+
+            _stateContainer.IsOutlookConnected = true;
+            _stateContainer.DidLastFetchSucceed = true;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "[Outlook DB] Failed to sync position for {Id}.", graphEventId);
+            _stateContainer.IsOutlookConnected = false;
+            _stateContainer.DidLastFetchSucceed = false;
+            _stateContainer.NotifyStateChanged();
         }
     }
 
