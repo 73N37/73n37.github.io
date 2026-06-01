@@ -20,9 +20,7 @@
             // These are served as real HTML files and handle their own routing.
             var authPaths = [
                 '/authentication/login-callback',
-                '/authentication/logout-callback',
-                '/authentication/login',
-                '/authentication/logout'
+                '/authentication/logout-callback'
             ];
             for (var i = 0; i < authPaths.length; i++) {
                 if (pathname === authPaths[i] || pathname.indexOf(authPaths[i]) === 0) {
