@@ -261,7 +261,7 @@
 </MudContainer>
 
 <!-- Detailed Action Drawer -->
-<MudDrawer @bind-Open="_isDrawerOpen" Anchor="Anchor.Right" Width="480px" Elevation="4" Style="background-color: #FAF9F6; font-family: 'Inter', sans-serif; overflow-y: auto;">
+<MudDrawer @bind-Open="_isDrawerOpen" Anchor="Anchor.Right" Width="480px" Elevation="4" Variant="DrawerVariant.Temporary" Style="background-color: #FAF9F6; font-family: 'Inter', sans-serif; overflow-y: auto;">
     @if (_selectedCard is not null)
     {
         <MudStack Class="pa-6" Spacing="4">
@@ -804,11 +804,15 @@
         StateHasChanged();
     }
 
-    private async void OnStateChanged()
+    private void OnStateChanged()
     {
-        await InvokeAsync(async () =>
+        InvokeAsync(() =>
         {
-            await LoadEventsAsync();
+            // Break the infinite DB fetch loop. Use the already updated Cards from StateContainer.
+            _allCards.Clear();
+            _allCards.AddRange(StateContainer.Cards);
+            GenerateCalendarGrid();
+            StateHasChanged();
         });
     }
 
@@ -913,12 +917,17 @@
 
     private async Task OpenEventDetails(KanbanEventCard card)
     {
+        // Premium Optimistic UI: open drawer instantly with local data
+        _selectedCard = card;
+        _isDetailsEditing = false; // Reset to details mode
+        CancelEditSubevent();      // Reset subevent form
+        _isDrawerOpen = true;
         _logMessage = $"[Database] Henter seneste detaljer for '{card.Subject}' fra databasen...";
         StateHasChanged();
 
         try
         {
-            // Pull the latest, fresh data from the database spejling to ensure real-time client views
+            // Pull the latest, fresh data from the database asynchronously to ensure real-time views
             var events = await PostgresService.FetchAllEventsAsync();
             var freshCard = events.FirstOrDefault(e => e.GraphEventId == card.GraphEventId);
             if (freshCard != null)
@@ -930,24 +939,15 @@
                 }
                 else
                 {
-                    _logMessage = $"[Advarsel] Kunne ikke forbinde til DigitalOcean PostgreSQL (Mixed Content / Offline). Viser lokal kopi af '{freshCard.Subject}'.";
+                    _logMessage = $"[Advarsel] Viser lokal kopi af '{freshCard.Subject}'.";
                 }
-            }
-            else
-            {
-                _selectedCard = card;
-                _logMessage = $"[Info] Viser selskab '{card.Subject}' fra lokal hukommelse.";
             }
         }
         catch (Exception)
         {
-            _selectedCard = card;
-            _logMessage = $"[Advarsel] Kunne ikke forbinde til databasen. Viser lokal kopi af '{card.Subject}'.";
+            // Keep the already set _selectedCard (which is card)
         }
 
-        _isDetailsEditing = false; // Reset to details mode
-        CancelEditSubevent();      // Reset subevent form
-        _isDrawerOpen = true;
         StateHasChanged();
     }
 
