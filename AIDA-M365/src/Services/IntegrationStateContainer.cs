@@ -32,6 +32,15 @@ public sealed class IntegrationStateContainer
     private string _azureSqlConnectionString = "Server=tcp:gods-sql-server.database.windows.net,1433;Initial Catalog=gods_booking_db;Persist Security Info=False;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
     private string _azureKeyVaultUrl = "https://gods-keyvault.vault.azure.net/";
 
+    // Microsoft Entra ID / MSAL credentials
+    private string _azureClientId = string.Empty;
+    private string _azureTenantId = string.Empty;
+
+    // Azure OpenAI credentials
+    private string _azureOpenAiEndpoint = string.Empty;
+    private string _azureOpenAiKey = string.Empty;
+    private string _azureOpenAiDeployment = "gpt-4o-mini";
+
     // e-conomic Billing State
     public int? LastInvoiceNumber { get; set; }
     public string LastPaymentLink { get; set; } = string.Empty;
@@ -128,6 +137,36 @@ public sealed class IntegrationStateContainer
             if (!string.IsNullOrEmpty(isDarkModeStr))
             {
                 _isDarkMode = bool.Parse(isDarkModeStr);
+            }
+
+            var clientIdStr = _js.Invoke<string>("localStorage.getItem", "AzureClientId_Secured");
+            if (clientIdStr != null)
+            {
+                _azureClientId = DecryptString(clientIdStr);
+            }
+
+            var tenantIdStr = _js.Invoke<string>("localStorage.getItem", "AzureTenantId_Secured");
+            if (tenantIdStr != null)
+            {
+                _azureTenantId = DecryptString(tenantIdStr);
+            }
+
+            var aoaiEndpointStr = _js.Invoke<string>("localStorage.getItem", "AzureOpenAiEndpoint_Secured");
+            if (aoaiEndpointStr != null)
+            {
+                _azureOpenAiEndpoint = DecryptString(aoaiEndpointStr);
+            }
+
+            var aoaiKeyStr = _js.Invoke<string>("localStorage.getItem", "AzureOpenAiKey_Secured");
+            if (aoaiKeyStr != null)
+            {
+                _azureOpenAiKey = DecryptString(aoaiKeyStr);
+            }
+
+            var aoaiDeploymentStr = _js.Invoke<string>("localStorage.getItem", "AzureOpenAiDeployment");
+            if (!string.IsNullOrEmpty(aoaiDeploymentStr))
+            {
+                _azureOpenAiDeployment = aoaiDeploymentStr;
             }
         }
         catch
@@ -331,6 +370,76 @@ public sealed class IntegrationStateContainer
             {
                 _azureKeyVaultUrl = value;
                 SaveToLocalStorage("AzureKeyVaultUrl_Secured", EncryptString(value));
+                NotifyStateChanged();
+            }
+        }
+    }
+
+    public string AzureClientId
+    {
+        get => _azureClientId;
+        set
+        {
+            if (_azureClientId != value)
+            {
+                _azureClientId = value;
+                SaveToLocalStorage("AzureClientId_Secured", EncryptString(value));
+                NotifyStateChanged();
+            }
+        }
+    }
+
+    public string AzureTenantId
+    {
+        get => _azureTenantId;
+        set
+        {
+            if (_azureTenantId != value)
+            {
+                _azureTenantId = value;
+                SaveToLocalStorage("AzureTenantId_Secured", EncryptString(value));
+                NotifyStateChanged();
+            }
+        }
+    }
+
+    public string AzureOpenAiEndpoint
+    {
+        get => _azureOpenAiEndpoint;
+        set
+        {
+            if (_azureOpenAiEndpoint != value)
+            {
+                _azureOpenAiEndpoint = value;
+                SaveToLocalStorage("AzureOpenAiEndpoint_Secured", EncryptString(value));
+                NotifyStateChanged();
+            }
+        }
+    }
+
+    public string AzureOpenAiKey
+    {
+        get => _azureOpenAiKey;
+        set
+        {
+            if (_azureOpenAiKey != value)
+            {
+                _azureOpenAiKey = value;
+                SaveToLocalStorage("AzureOpenAiKey_Secured", EncryptString(value));
+                NotifyStateChanged();
+            }
+        }
+    }
+
+    public string AzureOpenAiDeployment
+    {
+        get => _azureOpenAiDeployment;
+        set
+        {
+            if (_azureOpenAiDeployment != value)
+            {
+                _azureOpenAiDeployment = value;
+                SaveToLocalStorage("AzureOpenAiDeployment", value);
                 NotifyStateChanged();
             }
         }

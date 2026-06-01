@@ -457,6 +457,7 @@
 
                         <!-- Drag-and-Drop Container for all seating zones -->
                         <MudDropContainer T="SeatingGuest"
+                                          @ref="_seatingDropContainer"
                                           Items="_seatingGuests"
                                           ItemsSelector="@((guest, zoneId) => GetSeatingZoneId(guest) == zoneId)"
                                           ItemDropped="OnGuestDropped"
@@ -1534,6 +1535,7 @@
     private string _newGuestName = string.Empty;
     private string _newTableName = string.Empty;
     private bool _showAddTableForm = false;
+    private MudDropContainer<SeatingGuest>? _seatingDropContainer;
 
     /// <summary>
     /// Maps a SeatingGuest's TableNumber to its MudDropZone identifier string.
@@ -1563,6 +1565,7 @@
             _logMessage = $"[Bordplan] '{dropInfo.Item.Name}' blev flyttet til Uplacerede.";
         }
 
+        _seatingDropContainer?.Refresh();
         StateHasChanged();
     }
 
@@ -1581,6 +1584,7 @@
 
         _logMessage = $"[Bordplan] '{_newGuestName.Trim()}' blev tilføjet til gæstelisten.";
         _newGuestName = string.Empty;
+        _seatingDropContainer?.Refresh();
         StateHasChanged();
     }
 
@@ -1591,6 +1595,7 @@
     {
         _seatingGuests.Remove(guest);
         _logMessage = $"[Bordplan] '{guest.Name}' blev fjernet fra gæstelisten.";
+        _seatingDropContainer?.Refresh();
         StateHasChanged();
     }
 
@@ -1642,6 +1647,7 @@
         _logMessage = $"[Bordplan] '{_newTableName.Trim()}' blev oprettet.";
         _newTableName = string.Empty;
         _showAddTableForm = false;
+        _seatingDropContainer?.Refresh();
         StateHasChanged();
     }
 
@@ -1658,6 +1664,7 @@
 
         _seatingTables.Remove(table);
         _logMessage = $"[Bordplan] '{table.Name}' blev fjernet. Gæsterne er flyttet til Uplacerede.";
+        _seatingDropContainer?.Refresh();
         StateHasChanged();
     }
 

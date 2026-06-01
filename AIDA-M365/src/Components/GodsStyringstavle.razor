@@ -286,7 +286,11 @@
         // Do NOT call LoadEventsAsync here — that would cause an infinite loop since
         // FetchAllEventsAsync itself modifies state (Cards, DidLastFetchSucceed) which
         // would fire this handler again on every single fetch.
-        InvokeAsync(StateHasChanged);
+        InvokeAsync(() =>
+        {
+            _cards = new List<GodsEventCard>(StateContainer.Cards);
+            StateHasChanged();
+        });
     }
 
     public void Dispose()

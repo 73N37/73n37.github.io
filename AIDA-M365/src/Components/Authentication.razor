@@ -1,0 +1,28 @@
+@page "/authentication/{action}"
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+
+<RemoteAuthenticatorView Action="@Action">
+    <LoggingIn>
+        <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Style="height:100vh; background:#FAF9F6;">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+            <MudText Typo="Typo.h6" Style="color:#2C3E50; margin-top:16px;">Logger ind via Microsoft…</MudText>
+            <MudText Typo="Typo.caption" Style="color:#7F8C8D;">Omdirigerer til Entra ID</MudText>
+        </MudStack>
+    </LoggingIn>
+    <CompletingLoggingIn>
+        <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Style="height:100vh; background:#FAF9F6;">
+            <MudProgressCircular Color="Color.Success" Indeterminate="true" Size="Size.Large" />
+            <MudText Typo="Typo.h6" Style="color:#2C3E50; margin-top:16px;">Fuldfører login…</MudText>
+        </MudStack>
+    </CompletingLoggingIn>
+    <LogOut>
+        <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Style="height:100vh; background:#FAF9F6;">
+            <MudProgressCircular Color="Color.Warning" Indeterminate="true" Size="Size.Large" />
+            <MudText Typo="Typo.h6" Style="color:#2C3E50; margin-top:16px;">Logger ud…</MudText>
+        </MudStack>
+    </LogOut>
+</RemoteAuthenticatorView>
+
+@code {
+    [Parameter] public string? Action { get; set; }
+}

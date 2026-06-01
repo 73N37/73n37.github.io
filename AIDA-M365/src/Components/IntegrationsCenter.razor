@@ -54,7 +54,7 @@
                         <MudStack Row="true" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
                             <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
                                 <MudIcon Icon="@Icons.Material.Filled.Cloud" Style="color: #2C3E50;" Size="Size.Large" />
-                                <MudText Typo="Typo.h6" Class="font-weight-bold" Style="color: #2C3E50;">Microsoft 365 (BFF Token-lager)</MudText>
+                                <MudText Typo="Typo.h6" Class="font-weight-bold" Style="color: #2C3E50;">Microsoft Entra ID (App Registration)</MudText>
                             </MudStack>
                             <span class="status-indicator @(_m365Connected ? "online" : "offline")"></span>
                         </MudStack>
@@ -63,25 +63,36 @@
 
                         <MudStack Spacing="3">
                             <MudText Typo="Typo.body2" Class="text-muted font-weight-bold">OAUTH2 DELEGERET KONFIGURATION</MudText>
-                            
+
+                            <MudTextField @bind-Value="_m365ClientId"
+                                          Label="Azure App (Client) ID"
+                                          Variant="Variant.Outlined"
+                                          Margin="Margin.Dense"
+                                          Placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                                          Disabled="@_m365Connected"
+                                          HelperText="Fra din App Registration i Azure Portal" />
+
+                            <MudTextField @bind-Value="_m365TenantId"
+                                          Label="Directory (Tenant) ID"
+                                          Variant="Variant.Outlined"
+                                          Margin="Margin.Dense"
+                                          Placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                                          Disabled="@_m365Connected"
+                                          HelperText="Fra Azure Portal → Entra ID → Overview" />
+
                             @if (_m365Connected)
                             {
-                                <MudStack Spacing="2">
-                                    <MudTextField Value="@_m365ClientId" Label="Azure AD App Klient ID" ReadOnly="true" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                                    <MudTextField Value="@_m365TenantId" Label="Azure AD Tenant ID" ReadOnly="true" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                                    <MudTextField Value="@_m365UserEmail" Label="Autoriseret medarbejderkonto" ReadOnly="true" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                                    
-                                    <MudText Typo="Typo.caption" Color="Color.Success" Class="d-flex align-center font-weight-bold">
-                                        <MudIcon Icon="@Icons.Material.Filled.VpnKey" Size="Size.Small" Class="mr-1" />
-                                        Bruger-token er sikret i BFF-proxyen
-                                    </MudText>
-                                </MudStack>
+                                <MudText Typo="Typo.caption" Color="Color.Success" Class="d-flex align-center font-weight-bold">
+                                    <MudIcon Icon="@Icons.Material.Filled.VpnKey" Size="Size.Small" Class="mr-1" />
+                                    Entra ID konfigureret — Graph API klar
+                                </MudText>
+                                <MudText Typo="Typo.caption" Style="color:#7F8C8D;">Client ID: @_m365ClientId[..Math.Min(8,_m365ClientId.Length)]...</MudText>
                             }
                             else
                             {
-                                <MudText Typo="Typo.body2" Style="color: #7F8C8D;" Class="font-italic">
-                                    M365 integration er offline. Forbind din organisationskonto med sikre Entra ID-legitimationsoplysninger.
-                                </MudText>
+                                <MudAlert Severity="Severity.Info" Variant="Variant.Text" Dense="true" Style="font-size:0.75rem; padding:4px 8px;">
+                                    Opret en App Registration på <strong>portal.azure.com</strong> og indsæt Client ID + Tenant ID ovenfor. Se guiden.
+                                </MudAlert>
                             }
                         </MudStack>
                     </MudStack>
@@ -90,13 +101,13 @@
                         @if (_m365Connected)
                         {
                             <MudButton Variant="Variant.Outlined" Color="Color.Error" OnClick="DisconnectM365" Style="border-radius: 6px;">
-                                Afbryd Forbindelse
+                                Ryd Legitimationsoplysninger
                             </MudButton>
                         }
                         else
                         {
                             <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ConnectM365" Style="border-radius: 6px; background-color: #2C3E50; color: white;">
-                                Log ind via MSAL
+                                Gem og Aktiver
                             </MudButton>
                         }
                     </MudStack>
@@ -151,6 +162,75 @@
                 </MudPaper>
             </MudItem>
         </MudGrid>
+
+        <!-- Azure OpenAI Config Card -->
+        <MudPaper Class="pa-6 rounded-lg" Outlined="true" Style="background-color: white; border-top: 3px solid #D4AF37;">
+            <MudStack Spacing="4">
+                <MudStack Row="true" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+                    <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                        <MudIcon Icon="@Icons.Material.Filled.AutoAwesome" Style="color: #D4AF37;" Size="Size.Large" />
+                        <div>
+                            <MudText Typo="Typo.h6" Class="font-weight-bold" Style="color: #2C3E50;">Azure OpenAI (gpt-4o-mini)</MudText>
+                            <MudText Typo="Typo.caption" Style="color: #7F8C8D;">Aktiverer AI Resumé-knappen på selskabskort. Falder tilbage til regelbaseret resumé hvis ikke konfigureret.</MudText>
+                        </div>
+                    </MudStack>
+                    <span class="status-indicator @(_aoaiConfigured ? "online" : "offline")"></span>
+                </MudStack>
+
+                <MudDivider />
+
+                <MudGrid Spacing="2">
+                    <MudItem xs="12" md="5">
+                        <MudTextField @bind-Value="_aoaiEndpoint"
+                                      Label="Azure OpenAI Endpoint"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      Placeholder="https://your-resource.openai.azure.com/"
+                                      Disabled="@_aoaiConfigured"
+                                      HelperText="Kopiér fra Azure Portal → OpenAI resource → Keys and Endpoint" />
+                    </MudItem>
+                    <MudItem xs="12" md="5">
+                        <MudTextField @bind-Value="_aoaiKey"
+                                      Label="API Nøgle"
+                                      InputType="InputType.Password"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      Placeholder="••••••••••••••••••••••••••••••••"
+                                      Disabled="@_aoaiConfigured"
+                                      HelperText="Key 1 eller Key 2 fra Azure Portal" />
+                    </MudItem>
+                    <MudItem xs="12" md="2">
+                        <MudTextField @bind-Value="_aoaiDeployment"
+                                      Label="Model Deployment"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      Placeholder="gpt-4o-mini"
+                                      Disabled="@_aoaiConfigured"
+                                      HelperText="Dit deployment-navn" />
+                    </MudItem>
+                </MudGrid>
+
+                @if (!_aoaiConfigured)
+                {
+                    <MudAlert Severity="Severity.Info" Variant="Variant.Text" Dense="true" Style="font-size:0.75rem;">
+                        Uden Azure OpenAI bruges et <strong>regelbaseret resumé</strong> automatisk — systemet virker stadig fuldt ud.
+                    </MudAlert>
+                }
+
+                <MudStack Row="true" JustifyContent="JustifyContent.End" Spacing="2">
+                    @if (_aoaiConfigured)
+                    {
+                        <MudButton Variant="Variant.Outlined" Color="Color.Error" OnClick="DisconnectAoai" Style="border-radius: 6px;">Ryd API-nøgle</MudButton>
+                    }
+                    else
+                    {
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ConnectAoai" Style="border-radius: 6px; background-color: #2C3E50; color: white; font-weight: bold;">
+                            <MudIcon Icon="@Icons.Material.Filled.AutoAwesome" Class="mr-1" Size="Size.Small" /> Gem og Aktiver AI
+                        </MudButton>
+                    }
+                </MudStack>
+            </MudStack>
+        </MudPaper>
 
         <!-- Dynamic Configurations: Calendars and CRM Schemas -->
         <MudGrid>
@@ -391,23 +471,29 @@
 
 @code {
     private bool _m365Connected;
-    private string _m365ClientId = "71a2a4b8-db56-42d7-9878-8c041b492404";
-    private string _m365TenantId = "f8c8d5a2-94af-42d7-9978-8c041b492404";
-    private string _m365UserEmail = "koordinator@engestofte.dk";
+    private string _m365ClientId = string.Empty;
+    private string _m365TenantId = string.Empty;
+    private string _m365UserEmail = string.Empty;
 
     private bool _dynConnected;
     private string _dynUrl = "https://73N37.crm4.dynamics.com";
-    private string _dynClientId = "c3f8d2b4-e4a8-422e-9907-8c041b492404";
-    private string _dynSecret = "royalSecretVaultValueKeyStore";
+    private string _dynClientId = string.Empty;
+    private string _dynSecret = string.Empty;
 
     private bool _pgConnected;
     private string _pgHost = "104.248.47.45";
     private int _pgPort = 5432;
     private string _pgDatabase = "gods_booking_db";
     private string _pgUsername = "gods_admin";
-    private string _pgPassword = "••••••••••••••••";
+    private string _pgPassword = string.Empty;
     private bool _useSupabase;
-    private string _supabaseAnonKey = "";
+    private string _supabaseAnonKey = string.Empty;
+
+    // Azure OpenAI
+    private bool _aoaiConfigured;
+    private string _aoaiEndpoint = string.Empty;
+    private string _aoaiKey = string.Empty;
+    private string _aoaiDeployment = "gpt-4o-mini";
     
     private bool _showSqlDialog;
     private string _ddlScript = @"-- DDL Script til Engestofte Gods Booking Database (PostgreSQL)
@@ -471,26 +557,44 @@ CREATE TABLE IF NOT EXISTS SubEvents (
         _pgPassword = StateContainer.PostgresPassword;
         _useSupabase = StateContainer.UseSupabase;
         _supabaseAnonKey = StateContainer.SupabaseAnonKey;
+
+        // Load saved Azure credentials
+        _m365ClientId = StateContainer.AzureClientId;
+        _m365TenantId = StateContainer.AzureTenantId;
+        _aoaiEndpoint = StateContainer.AzureOpenAiEndpoint;
+        _aoaiKey = StateContainer.AzureOpenAiKey;
+        _aoaiDeployment = !string.IsNullOrWhiteSpace(StateContainer.AzureOpenAiDeployment)
+            ? StateContainer.AzureOpenAiDeployment : "gpt-4o-mini";
+        _aoaiConfigured = !string.IsNullOrWhiteSpace(_aoaiEndpoint) && !string.IsNullOrWhiteSpace(_aoaiKey);
+
         UpdateSystemHealth();
     }
 
     private void ConnectM365()
     {
+        if (string.IsNullOrWhiteSpace(_m365ClientId) || string.IsNullOrWhiteSpace(_m365TenantId))
+        {
+            _statusMessage = "[M365 Engine] Client ID og Tenant ID skal begge udfyldes for at aktivere Microsoft Graph.";
+            return;
+        }
+
+        StateContainer.AzureClientId = _m365ClientId;
+        StateContainer.AzureTenantId = _m365TenantId;
         _m365Connected = true;
         StateContainer.IsM365Connected = true;
-        _m365ClientId = "71a2a4b8-db56-42d7-9878-8c041b492404";
-        _m365TenantId = "f8c8d5a2-94af-42d7-9978-8c041b492404";
-        _m365UserEmail = "koordinator@engestofte.dk";
-        _statusMessage = "[M365 Engine] Delegeret Entra ID bruger-token hentet via BFF-proxy.";
+        _statusMessage = $"[M365 Engine] Entra ID konfigureret med Client ID: {_m365ClientId[..Math.Min(8,_m365ClientId.Length)]}... Graph API er klar.";
         UpdateSystemHealth();
     }
 
     private void DisconnectM365()
     {
+        _m365ClientId = string.Empty;
+        _m365TenantId = string.Empty;
+        StateContainer.AzureClientId = string.Empty;
+        StateContainer.AzureTenantId = string.Empty;
         _m365Connected = false;
         StateContainer.IsM365Connected = false;
-        _m365UserEmail = "";
-        _statusMessage = "[M365 Engine] Tilbagekaldte MSAL-token. Kalendersynkronisering er sat på pause.";
+        _statusMessage = "[M365 Engine] Entra ID legitimationsoplysninger slettet. Kalendersynkronisering er sat på pause.";
         UpdateSystemHealth();
     }
 
@@ -514,6 +618,31 @@ CREATE TABLE IF NOT EXISTS SubEvents (
         StateContainer.IsDynamicsConnected = false;
         _statusMessage = "[CRM Link] Dynamics 365 legitimationsoplysninger slettet fra Vault.";
         UpdateSystemHealth();
+    }
+
+    private void ConnectAoai()
+    {
+        if (string.IsNullOrWhiteSpace(_aoaiEndpoint) || string.IsNullOrWhiteSpace(_aoaiKey))
+        {
+            _statusMessage = "[OpenAI] Endpoint URL og API-nøgle skal begge udfyldes.";
+            return;
+        }
+
+        StateContainer.AzureOpenAiEndpoint = _aoaiEndpoint;
+        StateContainer.AzureOpenAiKey = _aoaiKey;
+        StateContainer.AzureOpenAiDeployment = string.IsNullOrWhiteSpace(_aoaiDeployment) ? "gpt-4o-mini" : _aoaiDeployment;
+        _aoaiConfigured = true;
+        _statusMessage = $"[OpenAI] Azure OpenAI konfigureret. Model: {_aoaiDeployment}. AI Resumé-funktionen er nu aktiv.";
+    }
+
+    private void DisconnectAoai()
+    {
+        _aoaiEndpoint = string.Empty;
+        _aoaiKey = string.Empty;
+        StateContainer.AzureOpenAiEndpoint = string.Empty;
+        StateContainer.AzureOpenAiKey = string.Empty;
+        _aoaiConfigured = false;
+        _statusMessage = "[OpenAI] Azure OpenAI API-nøgle slettet. Falder tilbage til regelbaseret resumé.";
     }
 
     private void ConnectPg()
