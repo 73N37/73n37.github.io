@@ -29,6 +29,38 @@
         // Mark this as an auth callback so 404.html skips it
         sessionStorage.setItem('msal_callback', 'true');
 
+        // Programmatically clear all MSAL token and session cache keys to trigger a clean auth flow
+        // without logging the user out of their browser-wide Microsoft session (Single Sign-On).
+        window.clearMsalCache = function () {
+            try {
+                console.log("[AIDA] Clearing MSAL session/local storage cache...");
+                var keysToRemove = [];
+                var clientId = "7e3e2434-c4b9-4de4-a4ed-1390e0fbdc4d";
+                
+                for (var i = 0; i < sessionStorage.length; i++) {
+                    var key = sessionStorage.key(i);
+                    if (key && (key.indexOf('msal') >= 0 || key.indexOf(clientId) >= 0)) {
+                        keysToRemove.push(key);
+                    }
+                }
+                for (var i = 0; i < localStorage.length; i++) {
+                    var key = localStorage.key(i);
+                    if (key && (key.indexOf('msal') >= 0 || key.indexOf(clientId) >= 0)) {
+                        keysToRemove.push(key);
+                    }
+                }
+                
+                keysToRemove.forEach(function (k) {
+                    sessionStorage.removeItem(k);
+                    localStorage.removeItem(k);
+                    console.log("[AIDA] Removed cache key: " + k);
+                });
+                console.log("[AIDA] MSAL cache cleared.");
+            } catch (e) {
+                console.error("[AIDA] Failed to clear MSAL cache:", e);
+            }
+        };
+
         // Clean up any stale MSAL redirect state keys that might contain
         // "undefined" (from a previously interrupted login), which would cause
         // MSAL to throw '"undefined" is not valid JSON' on this attempt.
