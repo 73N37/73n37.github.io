@@ -6,6 +6,7 @@
 @inject AIDA.M365.Services.IGodsDatabaseService DatabaseService
 @inject AIDA.M365.Services.IntegrationStateContainer StateContainer
 @inject IDialogService DialogService
+@inject NavigationManager NavigationManager
 
 <MudContainer MaxWidth="MaxWidth.False" Class="pa-6" Style="background: transparent;">
     <MudStack Spacing="6">
@@ -119,6 +120,196 @@
                 @_lastUpdatedMessage
             </MudAlert>
         }
+
+        <!-- Upcoming Events Panel -->
+        @{
+            var upcomingEvents = _cards
+                .Where(c => c.StartUtc >= DateTimeOffset.UtcNow)
+                .OrderBy(c => c.StartUtc)
+                .Take(5)
+                .ToList();
+
+            var todayEvents = _cards
+                .Where(c => c.StartUtc.ToLocalTime().Date == DateTime.Today)
+                .OrderBy(c => c.StartUtc)
+                .ToList();
+        }
+
+        <MudPaper Class="pa-5 rounded-lg" Elevation="2" Style="background-color: white; border-top: 3px solid #D4AF37;">
+            <MudStack Spacing="4">
+                <!-- Section Header -->
+                <MudStack Row="true" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+                    <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                        <MudIcon Icon="@Icons.Material.Filled.CalendarMonth" Style="color: #D4AF37;" Size="Size.Large" />
+                        <MudStack Spacing="0">
+                            <MudText Typo="Typo.h6" Class="font-weight-bold" Style="color: #2C3E50;">Kommende Selskaber</MudText>
+                            <MudText Typo="Typo.caption" Style="color: #7F8C8D;">
+                                @if (todayEvents.Count > 0)
+                                {
+                                    <span style="color: #D4AF37; font-weight: 600;">@todayEvents.Count afvikling i dag · </span>
+                                }
+                                @upcomingEvents.Count kommende begivenheder
+                            </MudText>
+                        </MudStack>
+                    </MudStack>
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Primary"
+                               EndIcon="@Icons.Material.Filled.ArrowForward"
+                               Href="/upcoming-events"
+                               Style="border-radius: 8px; border-color: #2C3E50; color: #2C3E50; font-weight: 600;">
+                        Se Kalender
+                    </MudButton>
+                </MudStack>
+
+                <MudDivider />
+
+                @if (upcomingEvents.Count == 0)
+                {
+                    <!-- Empty state -->
+                    <MudStack AlignItems="AlignItems.Center" Spacing="2" Class="py-6">
+                        <MudIcon Icon="@Icons.Material.Filled.EventBusy" Style="color: #BDC3C7; font-size: 3rem;" />
+                        <MudText Typo="Typo.body2" Style="color: #7F8C8D;">Ingen kommende selskaber planlagt endnu</MudText>
+                        <MudButton Variant="Variant.Filled" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.Add" OnClick="OpenCreateDialog"
+                                   Style="border-radius: 8px; font-weight: 600; background-color: #D4AF37; color: white;">
+                            Opret Første Selskab
+                        </MudButton>
+                    </MudStack>
+                }
+                else
+                {
+                    <MudStack Spacing="2">
+                        @foreach (var card in upcomingEvents)
+                        {
+                            var isToday = card.StartUtc.ToLocalTime().Date == DateTime.Today;
+                            var isTomorrow = card.StartUtc.ToLocalTime().Date == DateTime.Today.AddDays(1);
+                            var accentColor = card.EventSubtype switch
+                            {
+                                "Bryllup" or "Wedding"     => "#D4AF37",
+                                "Jagt & Event"             => "#EF4444",
+                                "Konference" or "Conference" => "#3B82F6",
+                                "Privat Fest" or "Birthday"  => "#8B5CF6",
+                                _                          => "#10B981"
+                            };
+                            var typeLabel = card.EventSubtype switch
+                            {
+                                "Wedding"    => "Bryllup",
+                                "Birthday"   => "Privat Fest",
+                                "Conference" => "Konference",
+                                _            => card.EventSubtype ?? "Selskab"
+                            };
+                            var sectionLabel = card.SectionKey switch
+                            {
+                                "inquiry"     => "Henvendelse",
+                                "quoted"      => "Tilbud Sendt",
+                                "confirmed"   => "Bekræftet",
+                                "preparation" => "Planlægning",
+                                "active"      => "Afvikling",
+                                "completed"   => "Afsluttet",
+                                _             => card.SectionKey
+                            };
+
+                            <MudPaper Class="pa-4 rounded-lg hover-card"
+                                      Outlined="true"
+                                      Style="@($"background-color: white; border-left: 4px solid {accentColor}; cursor: pointer; transition: box-shadow 0.15s ease;")"
+                                      @onclick="GoToCalendar">
+                                <MudGrid AlignItems="AlignItems.Center" Spacing="2">
+
+                                    <!-- Date Column -->
+                                    <MudItem xs="12" sm="2">
+                                        <MudPaper Class="pa-3 rounded-lg text-center" Elevation="0"
+                                                  Style="@($"background-color: {accentColor}15; border: 1px solid {accentColor}30;")">
+                                            <MudText Typo="Typo.h5" Class="font-weight-bold" Style="@($"color: {accentColor}; line-height: 1;")">
+                                                @card.StartUtc.ToLocalTime().Day
+                                            </MudText>
+                                            <MudText Typo="Typo.caption" Style="color: #7F8C8D; text-transform: uppercase; font-weight: 600; font-size: 0.65rem;">
+                                                @card.StartUtc.ToLocalTime().ToString("MMM", new System.Globalization.CultureInfo("da-DK"))
+                                            </MudText>
+                                            @if (isToday)
+                                            {
+                                                <MudChip Size="Size.Small" Style="@($"background-color: {accentColor}; color: white; font-size: 0.6rem; height: 18px; margin-top: 4px; font-weight: bold;")" DisableRipple="true">I DAG</MudChip>
+                                            }
+                                            else if (isTomorrow)
+                                            {
+                                                <MudChip Size="Size.Small" Style="background-color: #F59E0B; color: white; font-size: 0.6rem; height: 18px; margin-top: 4px; font-weight: bold;" DisableRipple="true">I MORGEN</MudChip>
+                                            }
+                                        </MudPaper>
+                                    </MudItem>
+
+                                    <!-- Event Info Column -->
+                                    <MudItem xs="12" sm="5">
+                                        <MudStack Spacing="1">
+                                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                                <MudChip Size="Size.Small" DisableRipple="true"
+                                                         Style="@($"background-color: {accentColor}20; color: {accentColor}; font-weight: 700; font-size: 0.7rem; height: 20px;")">
+                                                    @typeLabel
+                                                </MudChip>
+                                                <MudChip Size="Size.Small" DisableRipple="true"
+                                                         Style="background-color: #F1F5F9; color: #64748B; font-size: 0.65rem; height: 20px;">
+                                                    @sectionLabel
+                                                </MudChip>
+                                            </MudStack>
+                                            <MudText Typo="Typo.body1" Class="font-weight-bold" Style="color: #2C3E50;">
+                                                @card.Subject
+                                            </MudText>
+                                            <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                                                <MudIcon Icon="@Icons.Material.Filled.AccessTime" Size="Size.Small" Style="color: #7F8C8D; font-size: 0.85rem;" />
+                                                <MudText Typo="Typo.caption" Style="color: #7F8C8D;">
+                                                    @card.StartUtc.ToLocalTime().ToString("HH:mm") – @card.EndUtc.ToLocalTime().ToString("HH:mm")
+                                                </MudText>
+                                            </MudStack>
+                                        </MudStack>
+                                    </MudItem>
+
+                                    <!-- Location + Guests Column -->
+                                    <MudItem xs="12" sm="3">
+                                        <MudStack Spacing="1">
+                                            @if (!string.IsNullOrWhiteSpace(card.EstateArea))
+                                            {
+                                                <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
+                                                    <MudIcon Icon="@Icons.Material.Filled.Place" Size="Size.Small" Style="color: #7F8C8D; font-size: 0.9rem;" />
+                                                    <MudText Typo="Typo.body2" Style="color: #2C3E50; font-weight: 500;">@card.EstateArea</MudText>
+                                                </MudStack>
+                                            }
+                                            <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
+                                                <MudIcon Icon="@Icons.Material.Filled.People" Size="Size.Small" Style="color: #7F8C8D; font-size: 0.9rem;" />
+                                                <MudText Typo="Typo.body2" Style="color: #2C3E50;">@card.GuestCount gæster</MudText>
+                                            </MudStack>
+                                            @if (!string.IsNullOrWhiteSpace(card.AssignedCoordinator))
+                                            {
+                                                <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
+                                                    <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Style="color: #7F8C8D; font-size: 0.9rem;" />
+                                                    <MudText Typo="Typo.caption" Style="color: #7F8C8D;">@card.AssignedCoordinator</MudText>
+                                                </MudStack>
+                                            }
+                                        </MudStack>
+                                    </MudItem>
+
+                                    <!-- Price Column -->
+                                    <MudItem xs="12" sm="2" Class="d-flex justify-sm-end justify-start">
+                                        @if (card.Price.HasValue && card.Price.Value > 0)
+                                        {
+                                            <MudStack Spacing="0" AlignItems="AlignItems.End">
+                                                <MudText Typo="Typo.caption" Style="color: #7F8C8D; font-weight: 600; letter-spacing: 0.5px;">PRIS</MudText>
+                                                <MudText Typo="Typo.h6" Class="font-weight-bold" Style="color: #D4AF37;">
+                                                    @card.Price.Value.ToString("N0") kr.
+                                                </MudText>
+                                            </MudStack>
+                                        }
+                                        else
+                                        {
+                                            <MudStack Spacing="0" AlignItems="AlignItems.End">
+                                                <MudText Typo="Typo.caption" Style="color: #BDC3C7;">Ingen pris</MudText>
+                                            </MudStack>
+                                        }
+                                    </MudItem>
+
+                                </MudGrid>
+                            </MudPaper>
+                        }
+                    </MudStack>
+                }
+            </MudStack>
+        </MudPaper>
 
         <!-- Kanban Board Component -->
         <GodsKanbanBoard Sections="_sections" Cards="_cards" CardUpdated="OnCardUpdatedAsync" SectionDeleted="OnSectionDeletedAsync" CardDeleted="OnCardDeletedAsync" />
@@ -409,6 +600,8 @@
         _lastUpdatedMessage = $"[System] Selskabet '{card.Subject}' blev slettet permanent.";
         StateHasChanged();
     }
+
+    private void GoToCalendar() => NavigationManager.NavigateTo("/upcoming-events");
 
     private async Task OpenCreateDialog()
     {

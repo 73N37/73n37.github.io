@@ -25,7 +25,35 @@
             <MudButton Variant="Variant.Text" Style="color: white; font-weight: 500; border-radius: 8px;" Class="mx-1" Href="/home">Styringstavle</MudButton>
             <MudButton Variant="Variant.Text" Style="color: white; font-weight: 500; border-radius: 8px;" Class="mx-1" Href="/upcoming-events">Godskalender</MudButton>
             <MudIconButton Icon="@Icons.Material.Filled.Settings" Href="/connect" Style="color: white; border-radius: 8px;" Class="mx-1" Title="Integrationscenter (Indstillinger)" />
-            
+
+            <!-- Microsoft Login / Logout -->
+            <AuthorizeView>
+                <Authorized>
+                    <!-- Logged in: show name + live indicator + logout -->
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1"
+                              Style="background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.4); border-radius: 8px; padding: 4px 12px;">
+                        <span style="width:8px;height:8px;border-radius:50%;background:#10B981;display:inline-block;animation:pulse 1.5s infinite;"></span>
+                        <MudText Typo="Typo.caption" Style="color: #10B981; font-weight: 600;">
+                            @(context.User.Identity?.Name?.Split('@').FirstOrDefault() ?? "Bruger")
+                        </MudText>
+                        <MudText Typo="Typo.caption" Style="color: rgba(255,255,255,0.5);">· Outlook Live</MudText>
+                    </MudStack>
+                    <MudIconButton Icon="@Icons.Material.Filled.Logout"
+                                   Style="color: rgba(255,255,255,0.6); border-radius: 8px;"
+                                   Title="Log ud af Microsoft 365"
+                                   Href="/authentication/logout" />
+                </Authorized>
+                <NotAuthorized>
+                    <!-- Not logged in: prompt to connect -->
+                    <MudButton Variant="Variant.Outlined"
+                               StartIcon="@Icons.Custom.Brands.MicrosoftWindows"
+                               Style="color: white; border-color: rgba(255,255,255,0.4); border-radius: 8px; font-weight: 600; font-size: 0.8rem;"
+                               Href="/authentication/login">
+                        Log ind med Microsoft
+                    </MudButton>
+                </NotAuthorized>
+            </AuthorizeView>
+
             <!-- Beautiful Dynamic Obsidian vs Light Frost Theme Toggler Switch -->
             <MudIconButton Icon="@(_isDarkMode ? Icons.Material.Filled.Brightness5 : Icons.Material.Filled.Brightness4)" 
                            OnClick="ToggleTheme" 

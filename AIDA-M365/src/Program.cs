@@ -51,8 +51,9 @@ builder.Services.AddScoped<IntegrationStateContainer>();
 // ── Azure OpenAI ─────────────────────────────────────────────────────────
 builder.Services.AddScoped<IAzureOpenAiService, AzureOpenAiService>();
 
-// ── Domain Services (Demo mode for local dev without full Graph token) ───
-// Switch to AddAidaKanbanServices() to enable full production Graph sync.
-builder.Services.AddAidaKanbanDemoServices();
+// ── Production Outlook + Graph Services ──────────────────────────────────
+// OutlookGodsDatabaseService reads live Outlook Calendar events when the
+// user is logged in. Falls back to in-memory demo data automatically when not.
+builder.Services.AddAidaKanbanServices(builder.Configuration);
 
 await builder.Build().RunAsync();

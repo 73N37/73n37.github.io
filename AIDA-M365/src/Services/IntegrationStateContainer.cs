@@ -460,6 +460,21 @@ public sealed class IntegrationStateContainer
         }
     }
 
+    /// <summary>True when the user is logged in with Microsoft and Outlook events are live-synced.</summary>
+    private bool _isOutlookConnected = false;
+    public bool IsOutlookConnected
+    {
+        get => _isOutlookConnected;
+        set
+        {
+            if (_isOutlookConnected != value)
+            {
+                _isOutlookConnected = value;
+                NotifyStateChanged();
+            }
+        }
+    }
+
     public event Action? OnChange;
 
     public void NotifyStateChanged() => OnChange?.Invoke();

@@ -264,81 +264,122 @@ public sealed class GodsDatabaseService : IGodsDatabaseService
     /// <inheritdoc />
     public async Task SeedDemoDataToDbAsync(CancellationToken cancellationToken = default)
     {
-        var today = DateTimeOffset.UtcNow.Date;
+        // Use tomorrow as the baseline so events are ALWAYS in the future
+        // regardless of what time of day the app is loaded.
+        var tomorrow = DateTimeOffset.UtcNow.Date.AddDays(1);
         _stateContainer.Cards.Clear();
 
         var seededCards = new List<GodsEventCard>
         {
             new()
             {
-                GraphEventId = "demo-event-001",
-                MetadataId = Guid.NewGuid(),
-                Subject = "Kensington Bryllup i Den Store Lade",
-                BodyContent = "Et eksklusivt gods-bryllup med fuld forplejning, blomsterdekorationer i Den Store Lade og velkomstchampagne i Søparken.",
-                ColorHex = "#D4AF37",
-                Priority = "High",
-                SectionKey = "confirmed",
-                StartUtc = today.AddHours(11),
-                EndUtc = today.AddHours(18),
-                EventSubtype = "Bryllup",
-                GuestCount = 120,
+                GraphEventId    = "demo-event-001",
+                MetadataId      = Guid.NewGuid(),
+                Subject         = "Kensington Bryllup i Den Store Lade",
+                BodyContent     = "Et eksklusivt gods-bryllup med fuld forplejning, blomsterdekorationer i Den Store Lade og velkomstchampagne i Søparken.",
+                ColorHex        = "#D4AF37",
+                Priority        = "High",
+                SectionKey      = "confirmed",
+                StartUtc        = tomorrow.AddDays(2).AddHours(11),
+                EndUtc          = tomorrow.AddDays(2).AddHours(22),
+                EventSubtype    = "Bryllup",
+                GuestCount      = 120,
                 AssignedCoordinator = "Sarah Jenkins",
-                EstateArea = "Den Store Lade",
-                CateringOption = "Gourmet Selskabsmenu",
+                EstateArea      = "Den Store Lade",
+                CateringOption  = "Gourmet Selskabsmenu",
                 EconomicInvoiceNumber = 104052,
-                EconomicPaymentLink = "https://payment.e-conomic.com/invoice/104052/pay?token=demo_token_johnson",
-                Price = 185000m,
-                SubEvents = [
+                EconomicPaymentLink   = "https://payment.e-conomic.com/invoice/104052/pay?token=demo_token_johnson",
+                Price           = 185000m,
+                SubEvents =
+                [
                     new() { Title = "Velkomstreception & Champagne", StartTime = new TimeSpan(11, 0, 0), EndTime = new TimeSpan(12, 30, 0), Location = "Søparken" },
-                    new() { Title = "Bryllupsmiddag & Taler", StartTime = new TimeSpan(13, 0, 0), EndTime = new TimeSpan(17, 0, 0), Location = "Den Store Lade" },
-                    new() { Title = "Brudevals & Kageskæring", StartTime = new TimeSpan(17, 15, 0), EndTime = new TimeSpan(18, 0, 0), Location = "Den Store Lade" }
+                    new() { Title = "Bryllupsmiddag & Taler",        StartTime = new TimeSpan(13, 0, 0), EndTime = new TimeSpan(17, 0, 0), Location = "Den Store Lade" },
+                    new() { Title = "Brudevals & Kageskæring",        StartTime = new TimeSpan(17, 15, 0), EndTime = new TimeSpan(18, 0, 0), Location = "Den Store Lade" }
                 ]
             },
             new()
             {
-                GraphEventId = "demo-event-002",
-                MetadataId = Guid.NewGuid(),
-                Subject = "Sterling Konference i Hovedbygningen",
-                BodyContent = "Dagsmøde og konference i Hovedbygningen for Manor Holdings. Kræver AV-opsætning og konference-dagsmenu.",
-                ColorHex = "#10B981",
-                Priority = "Normal",
-                SectionKey = "preparation",
-                StartUtc = today.AddHours(8),
-                EndUtc = today.AddHours(14),
-                EventSubtype = "Konference",
-                GuestCount = 80,
+                GraphEventId    = "demo-event-002",
+                MetadataId      = Guid.NewGuid(),
+                Subject         = "Sterling Konference i Hovedbygningen",
+                BodyContent     = "Dagsmøde og konference for Manor Holdings. Kræver AV-opsætning og konference-dagsmenu.",
+                ColorHex        = "#10B981",
+                Priority        = "Normal",
+                SectionKey      = "preparation",
+                StartUtc        = tomorrow.AddDays(5).AddHours(8),
+                EndUtc          = tomorrow.AddDays(5).AddHours(17),
+                EventSubtype    = "Konference",
+                GuestCount      = 80,
                 AssignedCoordinator = "Michael Chang",
-                EstateArea = "Hovedbygningen",
-                CateringOption = "Konference-dagsmenu",
-                Price = 67000m,
-                SubEvents = [
-                    new() { Title = "Morgenmad & Netværk", StartTime = new TimeSpan(8, 0, 0), EndTime = new TimeSpan(9, 0, 0), Location = "Hovedbygningen" },
-                    new() { Title = "Formiddagssession & Keynote", StartTime = new TimeSpan(9, 0, 0), EndTime = new TimeSpan(12, 0, 0), Location = "Hovedbygningen" },
-                    new() { Title = "Forretningsfrokost", StartTime = new TimeSpan(12, 0, 0), EndTime = new TimeSpan(13, 0, 0), Location = "Hovedbygningen" }
+                EstateArea      = "Hovedbygningen",
+                CateringOption  = "Konference-dagsmenu",
+                Price           = 67000m,
+                SubEvents =
+                [
+                    new() { Title = "Morgenmad & Netværk",       StartTime = new TimeSpan(8,  0, 0), EndTime = new TimeSpan(9,  0, 0), Location = "Hovedbygningen" },
+                    new() { Title = "Formiddagssession & Keynote", StartTime = new TimeSpan(9,  0, 0), EndTime = new TimeSpan(12, 0, 0), Location = "Hovedbygningen" },
+                    new() { Title = "Forretningsfrokost",          StartTime = new TimeSpan(12, 0, 0), EndTime = new TimeSpan(13, 0, 0), Location = "Hovedbygningen" }
                 ]
             },
             new()
             {
-                GraphEventId = "demo-event-003",
-                MetadataId = Guid.NewGuid(),
-                Subject = "Midsommerfest i Søparken Henvendelse",
-                BodyContent = "Forespørgsel på leje af herregårdshaven (Søparken) og Hovedbygningen. Kræver formelt tilbud med pakkeopstilling og kapacitetstjek.",
-                ColorHex = "#D4AF37",
-                Priority = "High",
-                SectionKey = "inquiry",
-                StartUtc = today.AddDays(2).AddHours(9),
-                EndUtc = today.AddDays(2).AddHours(15),
-                EventSubtype = "Bryllup",
-                GuestCount = 200,
+                GraphEventId    = "demo-event-003",
+                MetadataId      = Guid.NewGuid(),
+                Subject         = "Midsommerfest i Søparken",
+                BodyContent     = "Forespørgsel på leje af herregårdshaven (Søparken) og Hovedbygningen. Kræver formelt tilbud med pakkeopstilling og kapacitetstjek.",
+                ColorHex        = "#D4AF37",
+                Priority        = "High",
+                SectionKey      = "inquiry",
+                StartUtc        = tomorrow.AddDays(10).AddHours(14),
+                EndUtc          = tomorrow.AddDays(10).AddHours(23),
+                EventSubtype    = "Privat Fest",
+                GuestCount      = 200,
                 AssignedCoordinator = "Sarah Jenkins",
-                EstateArea = "Søparken",
-                CateringOption = "Brunch & Champagne",
-                Price = 205000m,
-                SubEvents = [
-                    new() { Title = "Velkomst & Kaffe", StartTime = new TimeSpan(10, 0, 0), EndTime = new TimeSpan(11, 0, 0), Location = "Søparken" },
-                    new() { Title = "Have-reception & Champagne", StartTime = new TimeSpan(11, 0, 0), EndTime = new TimeSpan(14, 0, 0), Location = "Søparken" },
-                    new() { Title = "Brunch & Networking", StartTime = new TimeSpan(14, 0, 0), EndTime = new TimeSpan(16, 0, 0), Location = "Søparken" }
+                EstateArea      = "Søparken",
+                CateringOption  = "Brunch & Champagne",
+                Price           = 205000m,
+                SubEvents =
+                [
+                    new() { Title = "Velkomst & Kaffe",           StartTime = new TimeSpan(14, 0, 0), EndTime = new TimeSpan(15, 0, 0), Location = "Søparken" },
+                    new() { Title = "Have-reception & Champagne",  StartTime = new TimeSpan(15, 0, 0), EndTime = new TimeSpan(19, 0, 0), Location = "Søparken" },
+                    new() { Title = "Middag & Networking",          StartTime = new TimeSpan(19, 0, 0), EndTime = new TimeSpan(23, 0, 0), Location = "Søparken" }
                 ]
+            },
+            new()
+            {
+                GraphEventId    = "demo-event-004",
+                MetadataId      = Guid.NewGuid(),
+                Subject         = "Jagt & Middag på Engestofte Gods",
+                BodyContent     = "Eksklusiv jagt og middag-arrangement for 40 jagtgæster med efterfølgende selskabsmiddag i Hauptbygningen.",
+                ColorHex        = "#EF4444",
+                Priority        = "High",
+                SectionKey      = "quoted",
+                StartUtc        = tomorrow.AddDays(14).AddHours(9),
+                EndUtc          = tomorrow.AddDays(14).AddHours(21),
+                EventSubtype    = "Jagt & Event",
+                GuestCount      = 40,
+                AssignedCoordinator = "Lars Eriksen",
+                EstateArea      = "Den Store Lade",
+                CateringOption  = "Gourmet Selskabsmenu",
+                Price           = 95000m
+            },
+            new()
+            {
+                GraphEventId    = "demo-event-005",
+                MetadataId      = Guid.NewGuid(),
+                Subject         = "Royale Sølvbryllup — Familien Andersen",
+                BodyContent     = "25-års jubilæumsbryllup med 160 gæster. Fuld dekorering af Den Store Lade og Søparken, live musik og natmad.",
+                ColorHex        = "#D4AF37",
+                Priority        = "High",
+                SectionKey      = "confirmed",
+                StartUtc        = tomorrow.AddDays(21).AddHours(15),
+                EndUtc          = tomorrow.AddDays(21).AddHours(23),
+                EventSubtype    = "Bryllup",
+                GuestCount      = 160,
+                AssignedCoordinator = "Anna Koordinator",
+                EstateArea      = "Den Store Lade",
+                CateringOption  = "Gourmet Selskabsmenu",
+                Price           = 240000m
             }
         };
 
