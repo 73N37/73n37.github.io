@@ -444,72 +444,125 @@
                     </MudButton>
                 }
 
-                <!-- Visuel Bordplanlægger (Interactive Seating Canvas) -->
+                <!-- Visuel Bordplanlægger (Interactive Drag-and-Drop Seating Canvas) -->
                 <MudPaper Class="pa-4 rounded-lg mt-3" Outlined="true" Style="background-color: white; border-top: 3px solid #D4AF37;">
                     <MudStack Spacing="2">
                         <MudText Typo="Typo.subtitle2" Class="font-weight-bold" Style="color: #2C3E50; display: flex; align-items: center; gap: 8px;">
                             <MudIcon Icon="@Icons.Material.Filled.TableBar" Color="Color.Primary" />
-                            Visuel Gæste-Bordplanlægger (Maks. 120 personer)
+                            Visuel Gæste-Bordplanlægger
                         </MudText>
-                        <MudText Typo="Typo.caption" Style="color: #7F8C8D;">Klik på en gæst for at placere dem ved et af herregårdens selskabsborde live (Skiftes: Uplaceret -> Bord 1 -> Bord 2).</MudText>
+                        <MudText Typo="Typo.caption" Style="color: #7F8C8D;">Træk og slip gæster mellem bordene. Opret nye borde, tilføj gæster, eller fjern dem med ×-knappen.</MudText>
                         
                         <MudDivider Class="my-2" />
 
-                        <!-- Tables Visual Grid -->
-                        <MudGrid Spacing="2" Class="my-2">
-                            <!-- Bord 1 (Den Store Lade / Hovedbord) -->
-                            <MudItem xs="6">
-                                <MudPaper Class="pa-3 rounded-lg text-center" Outlined="true" Style="background-color: #FAF9F6; border: 1px solid rgba(212,175,55,0.3);">
-                                    <MudText Typo="Typo.caption" Class="font-weight-bold" Style="color: #D4AF37;">👑 BORD 1 (Hovedbord)</MudText>
-                                    <MudStack Spacing="1" Class="mt-2" Style="min-height: 60px;">
-                                        @foreach (var guest in _seatingGuests.Where(g => g.TableNumber == 1))
-                                        {
-                                            <div class="guest-pill" @onclick="() => ToggleGuestPlacement(guest)">
-                                                @guest.Name
-                                            </div>
-                                        }
-                                        @if (!_seatingGuests.Any(g => g.TableNumber == 1))
-                                        {
-                                            <MudText Typo="Typo.caption" Style="color: #BDC3C7;" Class="font-italic">Bordet er tomt</MudText>
-                                        }
-                                    </MudStack>
-                                </MudPaper>
-                            </MudItem>
+                        <!-- Drag-and-Drop Container for all seating zones -->
+                        <MudDropContainer T="SeatingGuest"
+                                          Items="_seatingGuests"
+                                          ItemsSelector="@((guest, zoneId) => GetSeatingZoneId(guest) == zoneId)"
+                                          ItemDropped="OnGuestDropped"
+                                          Class="d-flex flex-column gap-3">
+                            <ChildContent>
+                                <!-- Dynamic Tables Grid -->
+                                <MudGrid Spacing="2" Class="my-2">
+                                    @foreach (var table in _seatingTables)
+                                    {
+                                        <MudItem xs="6">
+                                            <MudPaper Class="pa-3 rounded-lg" Outlined="true" Style="@($"background-color: #FAF9F6; border: 2px solid {table.ColorHex}40; min-height: 120px; transition: border-color 0.2s ease;")">
+                                                <MudStack Row="true" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-2">
+                                                    <MudText Typo="Typo.caption" Class="font-weight-bold" Style="@($"color: {table.ColorHex};")">@table.Icon @table.Name</MudText>
+                                                    <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
+                                                                   Size="Size.Small"
+                                                                   Style="@($"color: {table.ColorHex}; opacity: 0.5;")"
+                                                                   OnClick="() => RemoveTable(table)"
+                                                                   Title="Fjern bord (gæster flyttes til uplacerede)" />
+                                                </MudStack>
+                                                <MudDropZone T="SeatingGuest"
+                                                             Identifier="@($"table-{table.Number}")"
+                                                             Class="guest-drop-zone"
+                                                             Style="min-height: 80px; border-radius: 8px; padding: 4px;" />
+                                            </MudPaper>
+                                        </MudItem>
+                                    }
 
-                            <!-- Bord 2 (Rose Selskabsbord) -->
-                            <MudItem xs="6">
-                                <MudPaper Class="pa-3 rounded-lg text-center" Outlined="true" Style="background-color: #FAF9F6; border: 1px solid rgba(13,148,136,0.3);">
-                                    <MudText Typo="Typo.caption" Class="font-weight-bold" Style="color: #0D9488;">🌸 BORD 2 (Rose Bord)</MudText>
-                                    <MudStack Spacing="1" Class="mt-2" Style="min-height: 60px;">
-                                        @foreach (var guest in _seatingGuests.Where(g => g.TableNumber == 2))
-                                        {
-                                            <div class="guest-pill" @onclick="() => ToggleGuestPlacement(guest)">
-                                                @guest.Name
-                                            </div>
-                                        }
-                                        @if (!_seatingGuests.Any(g => g.TableNumber == 2))
-                                        {
-                                            <MudText Typo="Typo.caption" Style="color: #BDC3C7;" Class="font-italic">Bordet er tomt</MudText>
-                                        }
-                                    </MudStack>
-                                </MudPaper>
-                            </MudItem>
-                        </MudGrid>
+                                    <!-- Add New Table Card -->
+                                    <MudItem xs="6">
+                                        <MudPaper Class="pa-3 rounded-lg d-flex flex-column justify-center align-center" Outlined="true" Style="background-color: #FAF9F6; border: 2px dashed #BDC3C7; min-height: 120px; cursor: pointer; transition: all 0.2s ease;" @onclick="ToggleAddTableForm">
+                                            @if (_showAddTableForm)
+                                            {
+                                                <MudStack Spacing="2" Style="width: 100%;" Class="pa-1">
+                                                    <MudTextField @bind-Value="_newTableName"
+                                                                  Label="Bordnavn"
+                                                                  Placeholder="f.eks. Bord 3"
+                                                                  Variant="Variant.Outlined"
+                                                                  Margin="Margin.Dense"
+                                                                  Immediate="true"
+                                                                  OnKeyUp="OnTableNameKeyUp" />
+                                                    <MudButton Variant="Variant.Filled"
+                                                               Color="Color.Primary"
+                                                               StartIcon="@Icons.Material.Filled.Add"
+                                                               OnClick="AddNewTable"
+                                                               Disabled="@string.IsNullOrWhiteSpace(_newTableName)"
+                                                               Style="background-color: #2C3E50; color: white; border-radius: 8px; font-weight: bold; font-size: 0.75rem;">
+                                                        Opret Bord
+                                                    </MudButton>
+                                                </MudStack>
+                                            }
+                                            else
+                                            {
+                                                <MudIcon Icon="@Icons.Material.Filled.AddCircleOutline" Size="Size.Large" Style="color: #BDC3C7;" />
+                                                <MudText Typo="Typo.caption" Class="font-weight-bold mt-1" Style="color: #BDC3C7;">Tilføj Nyt Bord</MudText>
+                                            }
+                                        </MudPaper>
+                                    </MudItem>
+                                </MudGrid>
 
-                        <!-- Uplacerede Gæster Pool -->
-                        <MudText Typo="Typo.caption" Class="font-weight-bold mt-2" Style="color: #7F8C8D;">UPLACEREDE GÆSTER</MudText>
-                        <div class="d-flex flex-wrap gap-2 pa-2 rounded-lg" style="background-color: #FAF9F6; border: 1px dashed #BDC3C7; min-height: 50px;">
-                            @foreach (var guest in _seatingGuests.Where(g => g.TableNumber == 0))
-                            {
-                                <span class="unplaced-pill" @onclick="() => ToggleGuestPlacement(guest)">
-                                    @guest.Name
-                                </span>
-                            }
-                            @if (!_seatingGuests.Any(g => g.TableNumber == 0))
-                            {
-                                <MudText Typo="Typo.caption" Style="color: #2ECC71;" Class="font-italic font-weight-bold">Alle gæster er placeret!</MudText>
-                            }
-                        </div>
+                                <!-- Uplacerede Gæster Pool -->
+                                <MudText Typo="Typo.caption" Class="font-weight-bold mt-2" Style="color: #7F8C8D;">UPLACEREDE GÆSTER</MudText>
+                                <MudDropZone T="SeatingGuest"
+                                             Identifier="unplaced"
+                                             Class="guest-drop-zone unplaced-zone"
+                                             Style="min-height: 60px; background-color: #FAF9F6; border: 2px dashed #BDC3C7; border-radius: 8px; padding: 8px;" />
+                            </ChildContent>
+
+                            <ItemRenderer Context="guest">
+                                <div class="draggable-guest-pill">
+                                    <MudIcon Icon="@Icons.Material.Filled.DragIndicator" Size="Size.Small" Style="color: #BDC3C7; font-size: 0.85rem; cursor: grab;" />
+                                    <span class="guest-name-text">@guest.Name</span>
+                                    <button class="guest-delete-btn" @onclick="() => RemoveGuest(guest)" @onclick:stopPropagation="true" title="Fjern gæst">
+                                        ×
+                                    </button>
+                                </div>
+                            </ItemRenderer>
+                        </MudDropContainer>
+
+                        <!-- Add Guest Inline Form -->
+                        <MudDivider Class="my-2" />
+                        <MudText Typo="Typo.caption" Class="font-weight-bold" Style="color: #7F8C8D;">TILFØJ GÆST TIL BORDPLANEN</MudText>
+                        <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                            <MudTextField @bind-Value="_newGuestName"
+                                          Label="Gæstens fulde navn"
+                                          Variant="Variant.Outlined"
+                                          Margin="Margin.Dense"
+                                          Style="flex-grow: 1;"
+                                          Immediate="true"
+                                          OnKeyUp="OnGuestNameKeyUp" />
+                            <MudButton Variant="Variant.Filled"
+                                       Color="Color.Secondary"
+                                       StartIcon="@Icons.Material.Filled.PersonAdd"
+                                       OnClick="AddNewGuest"
+                                       Disabled="@string.IsNullOrWhiteSpace(_newGuestName)"
+                                       Style="background-color: #D4AF37; color: white; border-radius: 8px; font-weight: bold; white-space: nowrap;">
+                                Tilføj Gæst
+                            </MudButton>
+                        </MudStack>
+
+                        <!-- Guest Count Summary -->
+                        <MudStack Row="true" Spacing="3" AlignItems="AlignItems.Center" Style="background: linear-gradient(135deg, rgba(212,175,55,0.08), rgba(212,175,55,0.03)); border: 1px solid rgba(212,175,55,0.2); border-radius: 8px; padding: 8px 12px;">
+                            <MudIcon Icon="@Icons.Material.Filled.Groups" Size="Size.Small" Style="color: #D4AF37;" />
+                            <MudText Typo="Typo.caption" Class="font-weight-bold" Style="color: #2C3E50;">
+                                @_seatingTables.Count borde · @_seatingGuests.Count gæster i alt · @_seatingGuests.Count(g => g.TableNumber > 0) placeret · @_seatingGuests.Count(g => g.TableNumber == 0) uplaceret
+                            </MudText>
+                        </MudStack>
                     </MudStack>
                 </MudPaper>
 
@@ -729,44 +782,93 @@
     }
     
     .calendar-day-cell:hover {
-        background-color: #FAF6EE !important; /* Soft Linen-Cream hover color */
-        border-color: #D4AF37 !important; /* Elegant Gold border focus */
+        background-color: #FAF6EE !important;
+        border-color: #D4AF37 !important;
     }
 
-    .guest-pill {
+    /* Drag-and-Drop Guest Pill */
+    .draggable-guest-pill {
+        display: flex;
+        align-items: center;
+        gap: 6px;
         background-color: white;
         border: 1px solid #E2E8F0;
-        border-radius: 4px;
-        padding: 4px 8px;
-        font-size: 0.75rem;
+        border-radius: 6px;
+        padding: 5px 8px 5px 4px;
+        font-size: 0.78rem;
         font-weight: 500;
-        cursor: pointer;
+        cursor: grab;
         transition: all 0.2s ease;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-        margin: 2px 0;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        margin: 3px 0;
+        position: relative;
+        user-select: none;
     }
-    .guest-pill:hover {
+    .draggable-guest-pill:hover {
         background-color: #F8FAFC;
-        border-color: #CBD5E1;
+        border-color: #D4AF37;
         transform: translateY(-1px);
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        box-shadow: 0 4px 8px rgba(212,175,55,0.12);
     }
-    .unplaced-pill {
-        background-color: white;
-        border: 1px dashed #CBD5E1;
-        border-radius: 4px;
-        padding: 4px 8px;
-        font-size: 0.75rem;
-        font-weight: 500;
+    .draggable-guest-pill:active {
+        cursor: grabbing;
+        box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+        transform: scale(1.02);
+        border-color: #D4AF37;
+        z-index: 100;
+    }
+
+    .guest-name-text {
+        flex-grow: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: #2C3E50;
+    }
+
+    /* Delete button — hidden by default, shown on hover */
+    .guest-delete-btn {
+        background: none;
+        border: none;
+        color: #BDC3C7;
+        font-size: 1.1rem;
+        font-weight: bold;
         cursor: pointer;
-        transition: all 0.2s ease;
-        display: inline-block;
+        padding: 0 2px;
+        line-height: 1;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: all 0.15s ease;
+        flex-shrink: 0;
     }
-    .unplaced-pill:hover {
-        background-color: #0D9488;
-        color: white;
-        border-color: #0D9488;
-        transform: scale(1.05);
+    .draggable-guest-pill:hover .guest-delete-btn {
+        opacity: 1;
+    }
+    .guest-delete-btn:hover {
+        background-color: #FEE2E2;
+        color: #EF4444;
+    }
+
+    /* Drop Zone Styles */
+    .guest-drop-zone {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        transition: background-color 0.2s ease, border-color 0.2s ease;
+    }
+    .guest-drop-zone.mud-drop-zone-drag-block {
+        background-color: rgba(212,175,55,0.06) !important;
+        border-color: #D4AF37 !important;
+        border-style: dashed !important;
+    }
+    .unplaced-zone.mud-drop-zone-drag-block {
+        background-color: rgba(13,148,136,0.06) !important;
+        border-color: #0D9488 !important;
     }
 </style>
 
@@ -1362,12 +1464,58 @@
         _logMessage = $"[Succes] Faktura #{invoiceNum} bogført succesfuldt i e-conomic!";
     }
 
-    // Seating Plan Model & Methods
+    // ─── Seating Plan Models & Methods ───
+
+    /// <summary>
+    /// Represents a table in the drag-and-drop seating planner.
+    /// </summary>
+    public class SeatingTable
+    {
+        public int Number { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Icon { get; set; } = "🪑";
+        public string ColorHex { get; set; } = "#607D8B";
+    }
+
+    /// <summary>
+    /// Represents a guest in the drag-and-drop seating planner.
+    /// The Id property provides stable identity for MudDropContainer tracking.
+    /// </summary>
     public class SeatingGuest
     {
+        public string Id { get; set; } = Guid.NewGuid().ToString();
         public string Name { get; set; } = string.Empty;
-        public int TableNumber { get; set; } = 0; // 0 = Unplaced, 1 = Table 1, 2 = Table 2
+        /// <summary>
+        /// 0 = Unplaced, positive number = assigned table number.
+        /// </summary>
+        public int TableNumber { get; set; } = 0;
     }
+
+    /// <summary>
+    /// Curated color palette for dynamically created tables.
+    /// Cycles through these colors as new tables are added.
+    /// </summary>
+    private static readonly string[] _tableColorPalette =
+    [
+        "#D4AF37", // Gold
+        "#0D9488", // Teal
+        "#6366F1", // Indigo
+        "#EC4899", // Pink
+        "#F97316", // Orange
+        "#8B5CF6", // Violet
+        "#14B8A6", // Cyan-teal
+        "#EF4444", // Red
+        "#84CC16", // Lime
+        "#06B6D4"  // Cyan
+    ];
+
+    private static readonly string[] _tableIcons = ["👑", "🌸", "🌿", "⭐", "🏛️", "🌺", "🍷", "🕯️", "💎", "🎀"];
+
+    private readonly List<SeatingTable> _seatingTables =
+    [
+        new SeatingTable { Number = 1, Name = "BORD 1 (Hovedbord)", Icon = "👑", ColorHex = "#D4AF37" },
+        new SeatingTable { Number = 2, Name = "BORD 2 (Rose Bord)", Icon = "🌸", ColorHex = "#0D9488" }
+    ];
 
     private readonly List<SeatingGuest> _seatingGuests =
     [
@@ -1383,15 +1531,145 @@
         new SeatingGuest { Name = "Benedikte Banner", TableNumber = 0 }
     ];
 
-    private void ToggleGuestPlacement(SeatingGuest guest)
+    private string _newGuestName = string.Empty;
+    private string _newTableName = string.Empty;
+    private bool _showAddTableForm = false;
+
+    /// <summary>
+    /// Maps a SeatingGuest's TableNumber to its MudDropZone identifier string.
+    /// Dynamically supports any table number from the _seatingTables list.
+    /// </summary>
+    private static string GetSeatingZoneId(SeatingGuest guest) =>
+        guest.TableNumber > 0 ? $"table-{guest.TableNumber}" : "unplaced";
+
+    /// <summary>
+    /// Handles the drop event when a guest pill is dragged to a new zone.
+    /// Parses the zone identifier to extract the table number dynamically.
+    /// </summary>
+    private void OnGuestDropped(MudItemDropInfo<SeatingGuest> dropInfo)
     {
-        if (guest.TableNumber == 0)
-            guest.TableNumber = 1;
-        else if (guest.TableNumber == 1)
-            guest.TableNumber = 2;
+        if (dropInfo.Item is null) return;
+
+        if (dropInfo.DropzoneIdentifier.StartsWith("table-") &&
+            int.TryParse(dropInfo.DropzoneIdentifier.AsSpan(6), out var tableNum))
+        {
+            dropInfo.Item.TableNumber = tableNum;
+            var tableName = _seatingTables.FirstOrDefault(t => t.Number == tableNum)?.Name ?? $"Bord {tableNum}";
+            _logMessage = $"[Bordplan] '{dropInfo.Item.Name}' blev flyttet til {tableName}.";
+        }
         else
-            guest.TableNumber = 0;
+        {
+            dropInfo.Item.TableNumber = 0;
+            _logMessage = $"[Bordplan] '{dropInfo.Item.Name}' blev flyttet til Uplacerede.";
+        }
+
         StateHasChanged();
+    }
+
+    /// <summary>
+    /// Adds a new guest to the unplaced pool from the inline form.
+    /// </summary>
+    private void AddNewGuest()
+    {
+        if (string.IsNullOrWhiteSpace(_newGuestName)) return;
+
+        _seatingGuests.Add(new SeatingGuest
+        {
+            Name = _newGuestName.Trim(),
+            TableNumber = 0
+        });
+
+        _logMessage = $"[Bordplan] '{_newGuestName.Trim()}' blev tilføjet til gæstelisten.";
+        _newGuestName = string.Empty;
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Removes a guest from the seating plan entirely.
+    /// </summary>
+    private void RemoveGuest(SeatingGuest guest)
+    {
+        _seatingGuests.Remove(guest);
+        _logMessage = $"[Bordplan] '{guest.Name}' blev fjernet fra gæstelisten.";
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Allows pressing Enter in the guest name field to add the guest.
+    /// </summary>
+    private void OnGuestNameKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            AddNewGuest();
+        }
+    }
+
+    /// <summary>
+    /// Toggles the "Add Table" inline form visibility.
+    /// </summary>
+    private void ToggleAddTableForm()
+    {
+        _showAddTableForm = !_showAddTableForm;
+        if (_showAddTableForm)
+        {
+            // Pre-fill with next sequential table name
+            var nextNum = _seatingTables.Count > 0 ? _seatingTables.Max(t => t.Number) + 1 : 1;
+            _newTableName = $"Bord {nextNum}";
+        }
+    }
+
+    /// <summary>
+    /// Creates a new table and adds it to the seating planner.
+    /// Automatically assigns a color and icon from the curated palette.
+    /// </summary>
+    private void AddNewTable()
+    {
+        if (string.IsNullOrWhiteSpace(_newTableName)) return;
+
+        var nextNum = _seatingTables.Count > 0 ? _seatingTables.Max(t => t.Number) + 1 : 1;
+        var colorIndex = (_seatingTables.Count) % _tableColorPalette.Length;
+        var iconIndex = (_seatingTables.Count) % _tableIcons.Length;
+
+        _seatingTables.Add(new SeatingTable
+        {
+            Number = nextNum,
+            Name = _newTableName.Trim().ToUpperInvariant(),
+            Icon = _tableIcons[iconIndex],
+            ColorHex = _tableColorPalette[colorIndex]
+        });
+
+        _logMessage = $"[Bordplan] '{_newTableName.Trim()}' blev oprettet.";
+        _newTableName = string.Empty;
+        _showAddTableForm = false;
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Removes a table from the planner. All guests at that table are moved to unplaced.
+    /// </summary>
+    private void RemoveTable(SeatingTable table)
+    {
+        // Move all guests from this table back to unplaced
+        foreach (var guest in _seatingGuests.Where(g => g.TableNumber == table.Number))
+        {
+            guest.TableNumber = 0;
+        }
+
+        _seatingTables.Remove(table);
+        _logMessage = $"[Bordplan] '{table.Name}' blev fjernet. Gæsterne er flyttet til Uplacerede.";
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Allows pressing Enter in the table name field to create the table.
+    /// </summary>
+    private void OnTableNameKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            AddNewTable();
+        }
     }
 
     private class CalendarDayCell

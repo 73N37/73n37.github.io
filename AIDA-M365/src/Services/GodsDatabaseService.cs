@@ -287,6 +287,7 @@ public sealed class GodsDatabaseService : IGodsDatabaseService
                 CateringOption = "Gourmet Selskabsmenu",
                 EconomicInvoiceNumber = 104052,
                 EconomicPaymentLink = "https://payment.e-conomic.com/invoice/104052/pay?token=demo_token_johnson",
+                Price = 185000m,
                 SubEvents = [
                     new() { Title = "Velkomstreception & Champagne", StartTime = new TimeSpan(11, 0, 0), EndTime = new TimeSpan(12, 30, 0), Location = "Søparken" },
                     new() { Title = "Bryllupsmiddag & Taler", StartTime = new TimeSpan(13, 0, 0), EndTime = new TimeSpan(17, 0, 0), Location = "Den Store Lade" },
@@ -309,6 +310,7 @@ public sealed class GodsDatabaseService : IGodsDatabaseService
                 AssignedCoordinator = "Michael Chang",
                 EstateArea = "Hovedbygningen",
                 CateringOption = "Konference-dagsmenu",
+                Price = 67000m,
                 SubEvents = [
                     new() { Title = "Morgenmad & Netværk", StartTime = new TimeSpan(8, 0, 0), EndTime = new TimeSpan(9, 0, 0), Location = "Hovedbygningen" },
                     new() { Title = "Formiddagssession & Keynote", StartTime = new TimeSpan(9, 0, 0), EndTime = new TimeSpan(12, 0, 0), Location = "Hovedbygningen" },
@@ -331,6 +333,7 @@ public sealed class GodsDatabaseService : IGodsDatabaseService
                 AssignedCoordinator = "Sarah Jenkins",
                 EstateArea = "Søparken",
                 CateringOption = "Brunch & Champagne",
+                Price = 205000m,
                 SubEvents = [
                     new() { Title = "Velkomst & Kaffe", StartTime = new TimeSpan(10, 0, 0), EndTime = new TimeSpan(11, 0, 0), Location = "Søparken" },
                     new() { Title = "Have-reception & Champagne", StartTime = new TimeSpan(11, 0, 0), EndTime = new TimeSpan(14, 0, 0), Location = "Søparken" },
