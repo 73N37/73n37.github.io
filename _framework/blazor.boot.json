@@ -1,7 +1,7 @@
 {
   "mainAssemblyName": "AIDA.M365",
   "resources": {
-    "hash": "sha256-Isi2QGy5eVQvXvvb9E82gaSTLzBrpfOUlMhC3XCAldU=",
+    "hash": "sha256-Wgn4rEQtSwUmTlWSXtT+o9tq4GoF2i63a8/tSWPNWms=",
     "jsModuleNative": {
       "dotnet.native.js": "sha256-sn/g61GjVPhViOYQDkq1OMlk0eyS9r2Hi0qgU2o0HIU="
     },
@@ -133,7 +133,7 @@
       "System.wasm": "sha256-T4iprIGorUAo1X44AS78i81rjTVY995cbd5O+yc1VDY=",
       "netstandard.wasm": "sha256-J9zXwU3iRcLjgoRmiBJYpw82faeILwctv58stUKlXMc=",
       "System.Private.CoreLib.wasm": "sha256-9qlmMFhdr4PNSpg6Yu3MxKzAWiVrxpkZ4vKMzJGs13o=",
-      "AIDA.M365.wasm": "sha256-RPhOxvm9XVQjvSxyOVF1i3+9sc4j1g+8WiyCEfzmr3E="
+      "AIDA.M365.wasm": "sha256-wbGGidyYWWQMnva6yJm9/PeIN20NUKY8Sa7A5uyaHsU="
     }
   },
   "cacheBootResources": true,
