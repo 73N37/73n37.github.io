@@ -45,14 +45,18 @@ builder.Services.AddMsalAuthentication(options =>
 });
 
 // ── Microsoft Graph SDK v5 ────────────────────────────────────────────────
-// MsalGraphAuthenticationProvider bridges the MSAL token to the Graph SDK.
-// If the user is not authenticated, Graph calls are skipped gracefully in
-// OutlookGodsDatabaseService (falls back to demo data).
+// IMPORTANT: In Blazor WASM, GraphServiceClient must receive a pre-built
+// HttpClient. The SDK's default constructor tries to configure
+// SocketsHttpHandler.Proxy which throws PlatformNotSupportedException in
+// the browser sandbox. Creating an HttpClient directly uses the browser's
+// native fetch API instead (Blazor WASM's default transport).
 builder.Services.AddScoped<IAuthenticationProvider, MsalGraphAuthenticationProvider>();
 builder.Services.AddScoped(sp =>
 {
     var authProvider = sp.GetRequiredService<IAuthenticationProvider>();
-    return new GraphServiceClient(authProvider, "https://graph.microsoft.com/v1.0");
+    // Use a plain HttpClient — in WASM this automatically uses BrowserHttpHandler
+    var httpClient = new HttpClient { BaseAddress = new Uri("https://graph.microsoft.com/v1.0/") };
+    return new GraphServiceClient(httpClient, authProvider, "https://graph.microsoft.com/v1.0");
 });
 
 // ── State Container ───────────────────────────────────────────────────────
