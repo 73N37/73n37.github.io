@@ -11,7 +11,7 @@ public static class DemoServiceCollectionExtensions
         services.AddScoped<IEventCommandCenterService, DemoEventCommandCenterService>();
         services.AddScoped<IEconomicErpService, DemoEconomicErpService>();
         services.AddScoped<IBookingAcknowledgementService, BookingAcknowledgementService>();
-        services.AddScoped<IPostgresDatabaseService, PostgresDatabaseService>();
+        services.AddScoped<IPostgresDatabaseService, AzureSqlDatabaseService>();
 
         return services;
     }

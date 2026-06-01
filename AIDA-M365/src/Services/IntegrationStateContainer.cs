@@ -24,6 +24,9 @@ public sealed class IntegrationStateContainer
     // Default to empty for local demo
     private string _supabaseAnonKey = "";
 
+    private string _azureSqlConnectionString = "Server=tcp:gods-sql-server.database.windows.net,1433;Initial Catalog=gods_booking_db;Persist Security Info=False;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
+    private string _azureKeyVaultUrl = "https://gods-keyvault.vault.azure.net/";
+
     // e-conomic Billing State
     public int? LastInvoiceNumber { get; set; }
     public string LastPaymentLink { get; set; } = string.Empty;
@@ -37,6 +40,8 @@ public sealed class IntegrationStateContainer
         _supabaseAnonKey = "";
         _useSupabase = false;
         _isPostgresConnected = true;
+        _azureSqlConnectionString = "Server=tcp:gods-sql-server.database.windows.net,1433;Initial Catalog=gods_booking_db;Persist Security Info=False;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;";
+        _azureKeyVaultUrl = "https://gods-keyvault.vault.azure.net/";
         _isDarkMode = false;
 
         // 2. Override with local storage if saved previously
@@ -94,6 +99,18 @@ public sealed class IntegrationStateContainer
             if (postgresHostStr != null)
             {
                 _postgresHost = DecryptString(postgresHostStr);
+            }
+
+            var azureSqlStr = _js.Invoke<string>("localStorage.getItem", "AzureSqlConnectionString_Secured");
+            if (azureSqlStr != null)
+            {
+                _azureSqlConnectionString = DecryptString(azureSqlStr);
+            }
+
+            var keyVaultStr = _js.Invoke<string>("localStorage.getItem", "AzureKeyVaultUrl_Secured");
+            if (keyVaultStr != null)
+            {
+                _azureKeyVaultUrl = DecryptString(keyVaultStr);
             }
 
             var pgConnectedStr = _js.Invoke<string>("localStorage.getItem", "IsPostgresConnected");
@@ -281,6 +298,34 @@ public sealed class IntegrationStateContainer
             {
                 _supabaseAnonKey = value;
                 SaveToLocalStorage("SupabaseAnonKey_Secured", EncryptString(value));
+                NotifyStateChanged();
+            }
+        }
+    }
+
+    public string AzureSqlConnectionString
+    {
+        get => _azureSqlConnectionString;
+        set
+        {
+            if (_azureSqlConnectionString != value)
+            {
+                _azureSqlConnectionString = value;
+                SaveToLocalStorage("AzureSqlConnectionString_Secured", EncryptString(value));
+                NotifyStateChanged();
+            }
+        }
+    }
+
+    public string AzureKeyVaultUrl
+    {
+        get => _azureKeyVaultUrl;
+        set
+        {
+            if (_azureKeyVaultUrl != value)
+            {
+                _azureKeyVaultUrl = value;
+                SaveToLocalStorage("AzureKeyVaultUrl_Secured", EncryptString(value));
                 NotifyStateChanged();
             }
         }
