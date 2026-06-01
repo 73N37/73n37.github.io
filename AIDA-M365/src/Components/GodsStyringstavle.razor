@@ -93,25 +93,67 @@
                 </MudPaper>
             </MudItem>
 
-            <!-- KPI 4: Synchronisation Hub -->
+            <!-- KPI 4: Synchronisation Hub (dynamic) -->
             <MudItem xs="12" sm="6" md="3">
                 <MudPaper Class="pa-4 rounded-lg glass-panel" Elevation="2" Outlined="true">
                     <MudStack Row="true" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
                         <MudStack Spacing="0">
                             <MudText Typo="Typo.caption" Class="text-muted font-weight-bold" Style="letter-spacing: 0.5px;">INTEGRATIONSBROER</MudText>
-                            <MudText Typo="Typo.h4" Class="font-weight-bold text-success">FORBUNDET</MudText>
+                            @if (StateContainer.IsOutlookConnected)
+                            {
+                                <MudText Typo="Typo.h4" Class="font-weight-bold text-success">FORBUNDET</MudText>
+                            }
+                            else
+                            {
+                                <MudText Typo="Typo.h4" Class="font-weight-bold" Style="color:#E74C3C;">AFBRUDT</MudText>
+                            }
                         </MudStack>
-                        <MudAvatar Color="Color.Success" Variant="Variant.Filled" Size="Size.Medium" Style="border-radius: 8px;">
-                            <MudIcon Icon="@Icons.Material.Filled.CloudQueue" />
+                        <MudAvatar Color="@(StateContainer.IsOutlookConnected ? Color.Success : Color.Error)" Variant="Variant.Filled" Size="Size.Medium" Style="border-radius: 8px;">
+                            <MudIcon Icon="@(StateContainer.IsOutlookConnected ? Icons.Material.Filled.CloudQueue : Icons.Material.Filled.CloudOff)" />
                         </MudAvatar>
                     </MudStack>
-                    <MudText Typo="Typo.caption" Color="Color.Success" Class="d-flex align-center mt-2 font-weight-bold">
-                        <span class="pulse-indicator mr-2"></span>
-                        Graph & Gods synkronisering aktiv
-                    </MudText>
+                    @if (StateContainer.IsOutlookConnected)
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Success" Class="d-flex align-center mt-2 font-weight-bold">
+                            <span class="pulse-indicator mr-2"></span>
+                            Graph &amp; Gods synkronisering aktiv
+                        </MudText>
+                    }
+                    else
+                    {
+                        <MudButton Variant="Variant.Filled" Size="Size.Small"
+                                   StartIcon="@Icons.Material.Filled.Refresh"
+                                   Href="/authentication/logout"
+                                   Style="margin-top:8px; background:#E74C3C; color:white; border-radius:6px; font-weight:600; width:100%; font-size:0.75rem;">
+                            Genforbind Kalender
+                        </MudButton>
+                    }
                 </MudPaper>
             </MudItem>
         </MudGrid>
+
+        <!-- Reconnect banner — shown when logged in but Graph Calendar is unreachable (401 / wrong token) -->
+        @if (!StateContainer.IsOutlookConnected && StateContainer.DidLastFetchSucceed == false)
+        {
+            <MudAlert Severity="Severity.Warning" Dense="false" Variant="Variant.Filled" Elevation="2"
+                      Style="border-radius: 8px; font-weight: 500;">
+                <MudStack Row="true" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Class="w-100">
+                    <MudStack Spacing="0">
+                        <MudText Typo="Typo.subtitle2" Style="color:white; font-weight:700;">Kalender-forbindelsen kræver fornyet adgang</MudText>
+                        <MudText Typo="Typo.body2" Style="color:rgba(255,255,255,0.85);">
+                            Din Outlook-konto (@(StateContainer.LoggedInUser ?? "Microsoft-konto")) skal godkende kalenderadgang igen.
+                            Klik 'Genforbind' for at logge ud og logge ind igen med de korrekte tilladelser.
+                        </MudText>
+                    </MudStack>
+                    <MudButton Variant="Variant.Filled"
+                               StartIcon="@Icons.Material.Filled.Sync"
+                               Href="/authentication/logout"
+                               Style="background:white; color:#E74C3C; font-weight:700; border-radius:8px; white-space:nowrap; flex-shrink:0;">
+                        Genforbind
+                    </MudButton>
+                </MudStack>
+            </MudAlert>
+        }
 
         <!-- Main Alert Zone -->
         @if (!string.IsNullOrWhiteSpace(_lastUpdatedMessage))

@@ -1,0 +1,117 @@
+/* Google Fonts — must be @import first, before any rules */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+
+/* ── Z-index overrides ────────────────────────────────────────────────────────
+   The "Opret Selskab" modal form sits at z-index 1301. MudBlazor's default
+   --mud-zindex-popover is 1300, which causes MudSelect dropdowns to render
+   BEHIND the form. Bumping both the popover and the scrollbar (used internally
+   by some popovers) above 1301 fixes the stacking order everywhere in the app.
+   ─────────────────────────────────────────────────────────────────────────── */
+:root {
+    --mud-zindex-popover: 2000;
+    --mud-zindex-tooltip: 2100;
+    --mud-zindex-snackbar: 2200;
+    --mud-zindex-dialog: 2300;
+}
+
+/* Force MudBlazor popovers (including select dropdowns and date pickers) to render on top of all drawers */
+.mud-popover {
+    z-index: 10000 !important;
+}
+
+/* Core custom styling for Estate Rental Command Center */
+
+body {
+    font-family: 'Outfit', sans-serif !important;
+}
+
+.brand-text {
+    font-family: 'Playfair Display', serif !important;
+}
+
+.min-height-300 {
+    min-height: 300px;
+}
+
+/* Glassmorphism details */
+.glass-panel {
+    background: rgba(255, 255, 255, 0.4) !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark-mode .glass-panel {
+    background: rgba(17, 24, 39, 0.45) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Premium Card Micro-Animations */
+.estate-card {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.estate-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.08) !important;
+}
+
+.dark-mode .estate-card:hover {
+    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Ghost Card Preview loading overlay inside cards */
+.ghost-card-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(1px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+    border-radius: inherit;
+    animation: pulse 1.5s infinite ease-in-out;
+}
+
+.dark-mode .ghost-card-overlay {
+    background: rgba(17, 24, 39, 0.7);
+}
+
+@keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 0.85; }
+    100% { opacity: 0.6; }
+}
+
+/* MudDropZone modern borders and spacing */
+.mud-drop-zone {
+    border: 1px dashed rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+    padding: 12px;
+    background-color: rgba(0, 0, 0, 0.01);
+    transition: all 0.2s ease-in-out;
+}
+
+.dark-mode .mud-drop-zone {
+    border: 1px dashed rgba(255, 255, 255, 0.08);
+    background-color: rgba(255, 255, 255, 0.01);
+}
+
+.mud-drop-zone-highlight {
+    border: 2px dashed var(--mud-palette-primary) !important;
+    background-color: rgba(16, 185, 129, 0.04) !important;
+}
+
+/* Hide the Blazor unhandled error bar — safety net for any future runtime errors */
+#blazor-error-ui {
+    display: none !important;
+}

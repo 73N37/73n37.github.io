@@ -475,6 +475,9 @@ public sealed class IntegrationStateContainer
         }
     }
 
+    /// <summary>Display name of the currently logged-in Microsoft account (e.g. 'Xod Arap · Outlook Live').</summary>
+    public string? LoggedInUser { get; set; }
+
     public event Action? OnChange;
 
     public void NotifyStateChanged() => OnChange?.Invoke();

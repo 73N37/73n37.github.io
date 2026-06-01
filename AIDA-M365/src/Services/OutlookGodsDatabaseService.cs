@@ -51,6 +51,17 @@ public sealed class OutlookGodsDatabaseService : IGodsDatabaseService
         // If the user is logged into Microsoft 365, fetch live from Outlook
         if (await IsAuthenticatedAsync())
         {
+            // Capture display name for the reconnect banner
+            try
+            {
+                var authState = await _authState.GetAuthenticationStateAsync();
+                var name = authState.User.Identity?.Name
+                    ?? authState.User.FindFirst("preferred_username")?.Value
+                    ?? authState.User.FindFirst("email")?.Value;
+                _stateContainer.LoggedInUser = name;
+            }
+            catch { /* ignore – display name is non-critical */ }
+
             try
             {
                 _logger.LogInformation("[Outlook DB] Fetching events from Outlook Calendar...");
@@ -66,8 +77,10 @@ public sealed class OutlookGodsDatabaseService : IGodsDatabaseService
                 _logger.LogWarning(ex, "[Outlook DB] Live fetch failed, using demo fallback.");
                 _stateContainer.DidLastFetchSucceed = false;
                 _stateContainer.IsOutlookConnected  = false;
-                // Clear any stale pre-login demo cards so fresh demo data loads below
-                _stateContainer.Cards.Clear();
+                // Do NOT clear Cards here — the user may have added events
+                // optimistically via SaveEventAsync while this fetch was in-flight.
+                // Clearing would destroy those cards (race condition).
+                // Fall through to BuildDemoCards() only if Cards is truly empty.
             }
         }
         else

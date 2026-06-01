@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Omdirigerer...</title>
+    <script type="text/javascript">
+        // ─────────────────────────────────────────────────────────────────────
+        // GitHub Pages SPA Redirect Script
+        // Handles client-side routing for Blazor WebAssembly.
+        //
+        // CRITICAL: Do NOT redirect authentication callback URLs.
+        // If we redirect /authentication/login-callback, MSAL loses the
+        // ?code=...&state=... parameters it needs to complete the token exchange.
+        // Those paths are served as real .html files and must NOT be redirected.
+        // ─────────────────────────────────────────────────────────────────────
+        (function () {
+            var pathname = window.location.pathname;
+
+            // ── Guard: skip auth callback paths ──────────────────────────────
+            // These are served as real HTML files and handle their own routing.
+            var authPaths = [
+                '/authentication/login-callback',
+                '/authentication/logout-callback',
+                '/authentication/login',
+                '/authentication/logout'
+            ];
+            for (var i = 0; i < authPaths.length; i++) {
+                if (pathname === authPaths[i] || pathname.indexOf(authPaths[i]) === 0) {
+                    // Let the browser load the real file — do nothing
+                    return;
+                }
+            }
+
+            // ── Normal SPA paths: save and redirect to index.html ─────────────
+            var search = window.location.search;
+            var hash = window.location.hash;
+
+            try {
+                sessionStorage.setItem('redirect_path', pathname + search + hash);
+            } catch (e) {
+                console.warn("sessionStorage is restricted:", e);
+            }
+
+            // Redirect to root so Blazor can take over routing
+            window.location.replace(window.location.origin + '/');
+        })();
+    </script>
+</head>
+<body>
+    <p>Omdirigerer til herregårdssystemet, venligst vent...</p>
+</body>
+</html>
