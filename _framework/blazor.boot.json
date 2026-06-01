@@ -1,7 +1,7 @@
 {
   "mainAssemblyName": "AIDA.M365",
   "resources": {
-    "hash": "sha256-XRNY2am71z16lpZbcJ88GubqYvbVLmVwvDonQ+Qgn9M=",
+    "hash": "sha256-q58sFokHF4oRbE5Z7on7cDZgIx2G3CZ0z9IEznw+h4I=",
     "jsModuleNative": {
       "dotnet.native.js": "sha256-sn/g61GjVPhViOYQDkq1OMlk0eyS9r2Hi0qgU2o0HIU="
     },
@@ -85,7 +85,7 @@
       "System.Runtime.InteropServices.wasm": "sha256-QqVSp6FzDs5nLiM8AUrhpwaohnsWkdUzCYfdk1fyQ40=",
       "System.Runtime.Numerics.wasm": "sha256-ux787BjVKWwshPNO5d4ro8mKzNQ2vaOJiZJYEim2KrE=",
       "System.Runtime.Serialization.Primitives.wasm": "sha256-mGfn/hzGcwhHjNwBtHzjsepOb+spzr0DHSrNu5qrdEg=",
-      "System.Runtime.wasm": "sha256-25HOgy4D/8jcPDiG96hZQywIpbXc2pLWLJ7YAfU71xk=",
+      "System.Runtime.wasm": "sha256-vt5ONZ23SvfOnnIFC0XDfL1DZZCAN6lvJbF39AxUl3o=",
       "System.Security.Claims.wasm": "sha256-U3gNnBfqPQtOLR2mac7M5C5Wr3sIB/5b+9aq0krxNlY=",
       "System.Security.Cryptography.X509Certificates.wasm": "sha256-ObCVmOsqrU0tFxTsLjZZGFaMxUuBrgyX4jiTmYqczfo=",
       "System.Security.Cryptography.wasm": "sha256-neSJUJmOCLMxrQOyjtjS78KJ1UQfV2FFPsCOcrq2WvU=",
@@ -99,7 +99,7 @@
       "System.wasm": "sha256-T4iprIGorUAo1X44AS78i81rjTVY995cbd5O+yc1VDY=",
       "netstandard.wasm": "sha256-FFKvQCaRO7JZ7e64Gr44n2jG0ZRO8hlT996BotwXDUY=",
       "System.Private.CoreLib.wasm": "sha256-XA5DS7Ni+LbFFYLC43V6pVRsohqdOatLtf2AE12rBOc=",
-      "AIDA.M365.wasm": "sha256-S2WAQe+biY0SQnmb7FH5D8hI8EZcgZUkJ/2GJhjNyYk="
+      "AIDA.M365.wasm": "sha256-6dGEh4lKkg0caH5F7SunojJAUOSZKelHg0o4IDBin+0="
     }
   },
   "cacheBootResources": true,
