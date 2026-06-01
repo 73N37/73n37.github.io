@@ -5,16 +5,21 @@ using System.Threading.Tasks;
 
 namespace AIDA.M365.Services;
 
-public sealed class DemoEconomicErpService : IEconomicErpService
+/// <summary>
+/// Mock invoice creation service simulating the e-conomic ERP API integration for offline sandbox testing.
+/// Generates authentic-feeling random invoice identifiers, tax rates, and customer profiles.
+/// </summary>
+public sealed class DemoErpService : IGodsErpService
 {
     private static readonly Random _random = new();
 
+    /// <inheritdoc />
     public async Task<EconomicCustomer> CreateOrGetCustomerAsync(
         string name,
         string email,
         CancellationToken cancellationToken = default)
     {
-        // Simulate a minor API delay for authentic feel
+        // Simulate minor API delay for real tactile responsiveness
         await Task.Delay(400, cancellationToken);
 
         int mockCustomerNumber = _random.Next(10000, 99999);
@@ -26,6 +31,7 @@ public sealed class DemoEconomicErpService : IEconomicErpService
         };
     }
 
+    /// <inheritdoc />
     public async Task<EconomicDraftInvoice> CreateDraftInvoiceAsync(
         int customerNumber,
         List<InvoiceLineItem> lines,
@@ -49,6 +55,7 @@ public sealed class DemoEconomicErpService : IEconomicErpService
         };
     }
 
+    /// <inheritdoc />
     public async Task<EconomicBookedInvoice> BookInvoiceAsync(
         int draftInvoiceNumber,
         CancellationToken cancellationToken = default)

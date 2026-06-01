@@ -1,32 +1,43 @@
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using AIDA.M365.Models;
 using Microsoft.Extensions.Logging;
 
 namespace AIDA.M365.Services;
 
-public sealed class DemoEventCommandCenterService : IEventCommandCenterService
+/// <summary>
+/// Mock orchestration service for scheduling stage changes and invoice automation workflows.
+/// Simulates offline e-conomic creation of customer records, draft invoices, and invoice booking actions.
+/// </summary>
+public sealed class DemoCommandCenterService : IGodsCommandCenterService
 {
-    private readonly IOutlookCalendarEventService _outlookCalendarEventService;
-    private readonly IEconomicErpService _economicErpService;
-    private readonly ILogger<DemoEventCommandCenterService> _logger;
+    private readonly IGodsCalendarService _calendarService;
+    private readonly IGodsErpService _erpService;
+    private readonly ILogger<DemoCommandCenterService> _logger;
 
-    public DemoEventCommandCenterService(
-        IOutlookCalendarEventService outlookCalendarEventService,
-        IEconomicErpService economicErpService,
-        ILogger<DemoEventCommandCenterService> logger)
+    public DemoCommandCenterService(
+        IGodsCalendarService calendarService,
+        IGodsErpService erpService,
+        ILogger<DemoCommandCenterService> logger)
     {
-        _outlookCalendarEventService = outlookCalendarEventService;
-        _economicErpService = economicErpService;
-        _logger = logger;
+        _calendarService = calendarService ?? throw new ArgumentNullException(nameof(calendarService));
+        _erpService = erpService ?? throw new ArgumentNullException(nameof(erpService));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    public async Task<MoveCardResult> MoveCardAsync(
-        MoveCardRequest request,
+    /// <inheritdoc />
+    public async Task<EventCardMoveResult> MoveCardAsync(
+        EventCardMoveRequest request,
         CancellationToken cancellationToken = default)
     {
-        // If dragging to Confirmed, execute the 100% complete e-conomic API integration flow
+        if (request == null) throw new ArgumentNullException(nameof(request));
+
+        // If dragging to Confirmed, execute the 100% complete simulated e-conomic API integration flow
         if (string.Equals(request.TargetSectionKey, "confirmed", StringComparison.OrdinalIgnoreCase))
         {
-            var customer = await _economicErpService.CreateOrGetCustomerAsync(
+            var customer = await _erpService.CreateOrGetCustomerAsync(
                 request.Card.AssignedCoordinator ?? "Godset Gæst",
                 "reservations@engestofte.dk",
                 cancellationToken);
@@ -92,30 +103,34 @@ public sealed class DemoEventCommandCenterService : IEventCommandCenterService
                 });
             }
 
-            var draft = await _economicErpService.CreateDraftInvoiceAsync(customer.CustomerNumber, lines, cancellationToken);
-            var booked = await _economicErpService.BookInvoiceAsync(draft.DraftInvoiceNumber, cancellationToken);
+            var draft = await _erpService.CreateDraftInvoiceAsync(customer.CustomerNumber, lines, cancellationToken);
+            var booked = await _erpService.BookInvoiceAsync(draft.DraftInvoiceNumber, cancellationToken);
 
             request.Card.EconomicInvoiceNumber = booked.BookedInvoiceNumber;
             request.Card.EconomicPaymentLink = booked.PaymentLink;
         }
 
-        await _outlookCalendarEventService.UpdateEventTimeAsync(
+        // Sync date-time updates to calendar service
+        await _calendarService.UpdateEventTimeAsync(
             request.Card.GraphEventId,
             request.StartUtc,
             request.EndUtc,
             cancellationToken);
 
         _logger.LogInformation(
-            "[DEMO] Simulated metadata save for event {EventId}",
+            "[DEMO CommandCenter] Simulated metadata save for event {EventId}",
             request.Card.GraphEventId);
 
-        return MoveCardResult.Success();
+        return EventCardMoveResult.Success();
     }
 
-    public Task<CardSummaryResult> SummarizeCardAsync(
-        KanbanEventCard card,
+    /// <inheritdoc />
+    public Task<EventCardSummaryResult> SummarizeCardAsync(
+        GodsEventCard card,
         CancellationToken cancellationToken = default)
     {
+        if (card == null) throw new ArgumentNullException(nameof(card));
+
         string summary;
         string[] actions;
 
@@ -156,6 +171,6 @@ public sealed class DemoEventCommandCenterService : IEventCommandCenterService
             ];
         }
 
-        return Task.FromResult(CardSummaryResult.Success(summary, actions));
+        return Task.FromResult(EventCardSummaryResult.Success(summary, actions));
     }
 }

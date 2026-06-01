@@ -3,7 +3,7 @@
 @using AIDA.M365.Models
 @using Microsoft.AspNetCore.Components
 @using MudBlazor
-@inject AIDA.M365.Services.IPostgresDatabaseService PostgresService
+@inject AIDA.M365.Services.IGodsDatabaseService DatabaseService
 @inject AIDA.M365.Services.IntegrationStateContainer StateContainer
 @inject IDialogService DialogService
 
@@ -121,7 +121,7 @@
         }
 
         <!-- Kanban Board Component -->
-        <KanbanBoard Sections="_sections" Cards="_cards" CardUpdated="OnCardUpdatedAsync" SectionDeleted="OnSectionDeletedAsync" CardDeleted="OnCardDeletedAsync" />
+        <GodsKanbanBoard Sections="_sections" Cards="_cards" CardUpdated="OnCardUpdatedAsync" SectionDeleted="OnSectionDeletedAsync" CardDeleted="OnCardDeletedAsync" />
     </MudStack>
 </MudContainer>
 
@@ -195,7 +195,7 @@
 </style>
 
 @code {
-    private readonly List<KanbanSectionDefinition> _sections =
+    private readonly List<GodsKanbanSection> _sections =
     [
         new()
         {
@@ -247,7 +247,7 @@
         }
     ];
 
-    private readonly List<KanbanEventCard> _cards = [];
+    private List<GodsEventCard> _cards = [];
 
     private string? _lastUpdatedMessage;
 
@@ -269,9 +269,14 @@
 
     private async Task LoadEventsAsync()
     {
-        var events = await PostgresService.FetchAllEventsAsync();
-        _cards.Clear();
-        _cards.AddRange(events);
+        var events = await DatabaseService.FetchAllEventsAsync();
+        if (events.Count == 0)
+        {
+            _lastUpdatedMessage = "[System] Henter planlagte selskaber og seeder demodata...";
+            await DatabaseService.SeedDemoDataToDbAsync();
+            events = await DatabaseService.FetchAllEventsAsync();
+        }
+        _cards = new List<GodsEventCard>(events);
         StateHasChanged();
     }
 
@@ -344,7 +349,7 @@
             key = $"{key}-{DateTime.Now.Ticks}";
         }
 
-        var newSection = new KanbanSectionDefinition
+        var newSection = new GodsKanbanSection
         {
             Key = key,
             Title = _newSectionTitle,
@@ -361,13 +366,12 @@
         return Task.CompletedTask;
     }
 
-    private async Task OnCardUpdatedAsync(KanbanEventCard card)
+    private async Task OnCardUpdatedAsync(GodsEventCard card)
     {
-        await PostgresService.SaveEventAsync(card);
+        await DatabaseService.SaveEventAsync(card);
 
-        var events = await PostgresService.FetchAllEventsAsync();
-        _cards.Clear();
-        _cards.AddRange(events);
+        var events = await DatabaseService.FetchAllEventsAsync();
+        _cards = new List<GodsEventCard>(events);
 
         _lastUpdatedMessage =
             $"[Synkronisering] Gen-synkroniserede '{card.Subject}' via MS Graph. Ny tid: {card.StartUtc.ToLocalTime():g} i kolonnen '{card.SectionKey}'.";
@@ -375,30 +379,28 @@
         StateHasChanged();
     }
 
-    private async Task OnSectionDeletedAsync(KanbanSectionDefinition section)
+    private async Task OnSectionDeletedAsync(GodsKanbanSection section)
     {
         var cardsInDeletedSection = _cards.Where(c => c.SectionKey == section.Key).ToList();
         foreach (var card in cardsInDeletedSection)
         {
-            await PostgresService.DeleteEventAsync(card.GraphEventId);
+            await DatabaseService.DeleteEventAsync(card.GraphEventId);
         }
 
-        var events = await PostgresService.FetchAllEventsAsync();
-        _cards.Clear();
-        _cards.AddRange(events);
+        var events = await DatabaseService.FetchAllEventsAsync();
+        _cards = new List<GodsEventCard>(events);
 
         _sections.Remove(section);
         _lastUpdatedMessage = $"Slettede kolonnen: {section.Title}";
         StateHasChanged();
     }
 
-    private async Task OnCardDeletedAsync(KanbanEventCard card)
+    private async Task OnCardDeletedAsync(GodsEventCard card)
     {
-        await PostgresService.DeleteEventAsync(card.GraphEventId);
+        await DatabaseService.DeleteEventAsync(card.GraphEventId);
 
-        var events = await PostgresService.FetchAllEventsAsync();
-        _cards.Clear();
-        _cards.AddRange(events);
+        var events = await DatabaseService.FetchAllEventsAsync();
+        _cards = new List<GodsEventCard>(events);
 
         _lastUpdatedMessage = $"[System] Selskabet '{card.Subject}' blev slettet permanent.";
         StateHasChanged();
@@ -408,7 +410,7 @@
     {
         var parameters = new DialogParameters
         {
-            [nameof(AIDA.M365.Components.Dialogs.CreateEventDialog.IsStaffView)] = _isStaffView
+            [nameof(AIDA.M365.Components.Dialogs.GodsEventDialog.IsStaffView)] = _isStaffView
         };
         var options = new DialogOptions
         {
@@ -419,19 +421,19 @@
         };
 
         var title = _isStaffView ? "Opret Selskab" : "Send Forespørgsel om Reservation";
-        var dialog = await DialogService.ShowAsync<AIDA.M365.Components.Dialogs.CreateEventDialog>(title, parameters, options);
+        var dialog = await DialogService.ShowAsync<AIDA.M365.Components.Dialogs.GodsEventDialog>(title, parameters, options);
         var result = await dialog.Result;
 
         if (result is null || result.Canceled) return;
 
-        var data = (AIDA.M365.Components.Dialogs.CreateEventDialog.NewEventData)result.Data!;
+        var data = (AIDA.M365.Components.Dialogs.GodsEventDialog.NewEventData)result.Data!;
         await SaveNewReservationFromDialog(data);
     }
 
-    private async Task SaveNewReservationFromDialog(AIDA.M365.Components.Dialogs.CreateEventDialog.NewEventData data)
+    private async Task SaveNewReservationFromDialog(AIDA.M365.Components.Dialogs.GodsEventDialog.NewEventData data)
     {
-        // Validation is handled inside CreateEventDialog before calling Close(Ok(...)).
-        // Here we just map the result to a KanbanEventCard and persist it.
+        // Validation is handled inside GodsEventDialog before calling Close(Ok(...)).
+        // Here we just map the result to a GodsEventCard and persist it.
 
         string targetSection = _isStaffView ? "confirmed" : "inquiry";
         string targetPriority = "Normal";
@@ -448,7 +450,7 @@
             targetPriority = "High";
         }
 
-        var newCard = new KanbanEventCard
+        var newCard = new GodsEventCard
         {
             GraphEventId        = $"evt-{Guid.NewGuid()}",
             MetadataId          = Guid.NewGuid(),
@@ -467,11 +469,10 @@
             Price               = data.Price
         };
 
-        await PostgresService.SaveEventAsync(newCard);
+        await DatabaseService.SaveEventAsync(newCard);
 
-        var events = await PostgresService.FetchAllEventsAsync();
-        _cards.Clear();
-        _cards.AddRange(events);
+        var events = await DatabaseService.FetchAllEventsAsync();
+        _cards = new List<GodsEventCard>(events);
 
         _lastUpdatedMessage = _isStaffView
             ? $"[Succes] Selskabet '{newCard.Subject}' blev oprettet og lagt i kolonnen '{newCard.SectionKey}'."
@@ -480,3 +481,4 @@
         StateHasChanged();
     }
 }
+

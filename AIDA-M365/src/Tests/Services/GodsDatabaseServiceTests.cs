@@ -16,19 +16,22 @@ using Xunit;
 
 namespace AIDA.M365.Tests.Services;
 
-public class AzureSqlDatabaseServiceTests
+/// <summary>
+/// Unit tests verifying database serialization rules, anonymous API authorizations, and cache updates.
+/// </summary>
+public class GodsDatabaseServiceTests
 {
-    private readonly Mock<ILogger<AzureSqlDatabaseService>> _mockLogger;
+    private readonly Mock<ILogger<GodsDatabaseService>> _mockLogger;
     private readonly Mock<IJSRuntime> _mockJsRuntime;
     private readonly IntegrationStateContainer _stateContainer;
 
-    public AzureSqlDatabaseServiceTests()
+    public GodsDatabaseServiceTests()
     {
-        _mockLogger = new Mock<ILogger<AzureSqlDatabaseService>>();
+        _mockLogger = new Mock<ILogger<GodsDatabaseService>>();
         _mockJsRuntime = new Mock<IJSRuntime>();
         _stateContainer = new IntegrationStateContainer(_mockJsRuntime.Object);
         
-        // Force test state variables to local active mode by default
+        // Configures database synchronization variables to active local container sync mode by default
         _stateContainer.IsPostgresConnected = true;
         _stateContainer.PostgresHost = "localhost";
         _stateContainer.UseSupabase = false;
@@ -47,7 +50,7 @@ public class AzureSqlDatabaseServiceTests
     public async Task FetchAllEventsAsync_ShouldUpdateLocalCache_WhenApiCallIsSuccessful()
     {
         // Arrange
-        var testCard = new KanbanEventCard
+        var testCard = new GodsEventCard
         {
             GraphEventId = "event-123",
             Subject = "Test Integration Wedding",
@@ -57,7 +60,7 @@ public class AzureSqlDatabaseServiceTests
             GuestCount = 100
         };
 
-        var responseList = new List<KanbanEventCard> { testCard };
+        var responseList = new List<GodsEventCard> { testCard };
 
         var httpClient = CreateMockHttpClient(request =>
         {
@@ -71,7 +74,7 @@ public class AzureSqlDatabaseServiceTests
             };
         });
 
-        var service = new AzureSqlDatabaseService(httpClient, _stateContainer, _mockLogger.Object);
+        var service = new GodsDatabaseService(httpClient, _stateContainer, _mockLogger.Object);
 
         // Act
         var result = await service.FetchAllEventsAsync();
@@ -88,7 +91,7 @@ public class AzureSqlDatabaseServiceTests
     public async Task SaveEventAsync_ShouldUpdateLocalCacheAndPostToDatabase()
     {
         // Arrange
-        var testCard = new KanbanEventCard
+        var testCard = new GodsEventCard
         {
             GraphEventId = "event-456",
             Subject = "Catering Conference",
@@ -109,7 +112,7 @@ public class AzureSqlDatabaseServiceTests
             return new HttpResponseMessage(HttpStatusCode.Created);
         });
 
-        var service = new AzureSqlDatabaseService(httpClient, _stateContainer, _mockLogger.Object);
+        var service = new GodsDatabaseService(httpClient, _stateContainer, _mockLogger.Object);
 
         // Act
         await service.SaveEventAsync(testCard);
@@ -123,7 +126,7 @@ public class AzureSqlDatabaseServiceTests
     public async Task DeleteEventAsync_ShouldRemoveFromLocalCacheAndCallDeleteEndpoint()
     {
         // Arrange
-        var testCard = new KanbanEventCard
+        var testCard = new GodsEventCard
         {
             GraphEventId = "event-789",
             Subject = "Unconfirmed Party",
@@ -143,7 +146,7 @@ public class AzureSqlDatabaseServiceTests
             return new HttpResponseMessage(HttpStatusCode.NoContent);
         });
 
-        var service = new AzureSqlDatabaseService(httpClient, _stateContainer, _mockLogger.Object);
+        var service = new GodsDatabaseService(httpClient, _stateContainer, _mockLogger.Object);
 
         // Act
         await service.DeleteEventAsync("event-789");
@@ -152,7 +155,6 @@ public class AzureSqlDatabaseServiceTests
         _stateContainer.Cards.Should().NotContain(c => c.GraphEventId == "event-789");
     }
 
-    // Helper HttpMessageHandler subclass to override SendAsync
     private class MockHttpMessageHandler : HttpMessageHandler
     {
         private readonly Func<HttpRequestMessage, HttpResponseMessage> _handler;

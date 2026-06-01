@@ -3,7 +3,7 @@
 @using AIDA.M365.Models
 @using Microsoft.AspNetCore.Components
 @using MudBlazor
-@inject AIDA.M365.Services.IPostgresDatabaseService PostgresService
+@inject AIDA.M365.Services.IGodsDatabaseService DatabaseService
 @inject AIDA.M365.Services.IntegrationStateContainer StateContainer
 @inject IDialogService DialogService
 
@@ -139,6 +139,13 @@
                                                     <MudIcon Icon="@Icons.Material.Filled.People" Size="Size.Small" Style="font-size: 0.75rem; vertical-align: middle; margin-right: 2px;" />
                                                     @card.GuestCount Gæster
                                                 </MudText>
+                                                @if (card.Price.HasValue && card.Price.Value > 0)
+                                                {
+                                                    <MudText Typo="Typo.caption" Style="font-size: 0.7rem; color: #D4AF37; font-weight: bold;" Class="d-block text-truncate">
+                                                        <MudIcon Icon="@Icons.Material.Filled.Payments" Size="Size.Small" Style="font-size: 0.75rem; vertical-align: middle; margin-right: 2px; color: #D4AF37;" />
+                                                        @card.Price.Value.ToString("N0") kr.
+                                                    </MudText>
+                                                }
                                             }
                                             else
                                             {
@@ -237,6 +244,13 @@
                                                         <MudIcon Icon="@Icons.Material.Filled.People" Size="Size.Small" Style="font-size: 0.75rem; vertical-align: middle; margin-right: 2px;" />
                                                         @card.GuestCount Gæster
                                                     </MudText>
+                                                    @if (card.Price.HasValue && card.Price.Value > 0)
+                                                    {
+                                                        <MudText Typo="Typo.caption" Style="font-size: 0.7rem; color: #D4AF37; font-weight: bold;" Class="d-block text-truncate">
+                                                            <MudIcon Icon="@Icons.Material.Filled.Payments" Size="Size.Small" Style="font-size: 0.75rem; vertical-align: middle; margin-right: 2px; color: #D4AF37;" />
+                                                            @card.Price.Value.ToString("N0") kr.
+                                                        </MudText>
+                                                    }
                                                 }
                                                 else
                                                 {
@@ -309,6 +323,8 @@
                 </MudSelect>
 
                 <MudTextField @bind-Value="_editCoordinator" Label="Ansvarlig Koordinator" Variant="Variant.Outlined" Margin="Margin.Dense" />
+
+                <MudNumericField @bind-Value="_editPrice" Label="Samlet Selskabspris" Variant="Variant.Outlined" Margin="Margin.Dense" Min="0" HideSpinButtons="true" Format="N0" Adornment="Adornment.End" AdornmentText="kr." />
 
                 <MudStack Row="true" Spacing="2" JustifyContent="JustifyContent.SpaceBetween" Class="mt-2">
                     <MudButton Variant="Variant.Filled" Color="Color.Error" StartIcon="@Icons.Material.Filled.Delete" OnClick="() => DeleteEventAsync(_selectedCard)" Style="border-radius: 8px; font-weight: bold;">
@@ -388,6 +404,17 @@
                                 <MudText Typo="Typo.body2">@_selectedCard.CateringOption</MudText>
                             </MudStack>
                         </MudStack>
+
+                        @if (_selectedCard.Price.HasValue && _selectedCard.Price.Value > 0)
+                        {
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                <MudIcon Icon="@Icons.Material.Filled.Payments" Style="color: #D4AF37; font-size: 1.5rem;" />
+                                <MudStack Spacing="0">
+                                    <MudText Typo="Typo.caption" Class="font-weight-bold" Style="color: #D4AF37;">SAMLET SELSKABSPRIS</MudText>
+                                    <MudText Typo="Typo.body2" Class="font-weight-bold" Style="color: #D4AF37;">@(_selectedCard.Price.Value.ToString("N0")) kr.</MudText>
+                                </MudStack>
+                            </MudStack>
+                        }
                     </MudStack>
                 </MudPaper>
 
@@ -486,18 +513,18 @@
                     </MudStack>
                 </MudPaper>
 
-                <!-- Timetable / Subevents Section -->
+                <!-- Timetable / SubEvents Section -->
                 <MudPaper Class="pa-4 rounded-lg mt-3" Outlined="true" Style="background-color: white;">
                     <MudText Typo="Typo.subtitle2" Class="font-weight-bold mb-2" Style="color: #2C3E50;">Dagens Program (Del-begivenheder)</MudText>
                     
-                    @if (_selectedCard.Subevents == null || _selectedCard.Subevents.Count == 0)
+                    @if (_selectedCard.SubEvents == null || _selectedCard.SubEvents.Count == 0)
                     {
                         <MudText Typo="Typo.caption" Class="text-muted d-block mb-2">Ingen del-begivenheder planlagt endnu.</MudText>
                     }
                     else
                     {
                         <MudStack Spacing="2" Class="mb-3">
-                            @foreach (var sub in _selectedCard.Subevents.OrderBy(s => s.StartTime))
+                            @foreach (var sub in _selectedCard.SubEvents.OrderBy(s => s.StartTime))
                             {
                                 <MudPaper Class="pa-3 rounded-lg" Outlined="true" Style="background-color: #FAF9F6; border-left: 4px solid #D4AF37;">
                                     <MudStack Row="true" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
@@ -513,8 +540,8 @@
                                         @if (_isStaffView)
                                         {
                                             <MudStack Row="true" Spacing="1">
-                                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Color="Color.Primary" OnClick="() => StartEditSubevent(sub)" />
-                                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" OnClick="() => DeleteSubevent(sub)" />
+                                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Color="Color.Primary" OnClick="() => StartEditSubEvent(sub)" />
+                                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" OnClick="() => DeleteSubEvent(sub)" />
                                             </MudStack>
                                         }
                                     </MudStack>
@@ -542,12 +569,12 @@
                                 <MudSelectItem Value="@("Hovedbygningen")">Hovedbygningen</MudSelectItem>
                                 <MudSelectItem Value="@("Søparken")">Søparken</MudSelectItem>
                             </MudSelect>
-                            <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="SaveSubevent" Style="background-color: #D4AF37; color: white; border-radius: 8px; font-weight: bold;">
-                                @(_editingSubeventId.HasValue ? "Opdater Aktivitet" : "Tilføj Aktivitet")
+                            <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="SaveSubEvent" Style="background-color: #D4AF37; color: white; border-radius: 8px; font-weight: bold;">
+                                @(_editingSubEventId.HasValue ? "Opdater Aktivitet" : "Tilføj Aktivitet")
                             </MudButton>
-                            @if (_editingSubeventId.HasValue)
+                            @if (_editingSubEventId.HasValue)
                             {
-                                <MudButton Variant="Variant.Outlined" OnClick="CancelEditSubevent" Style="border-radius: 8px;" Class="mt-1">Annuller redigering</MudButton>
+                                <MudButton Variant="Variant.Outlined" OnClick="CancelEditSubEvent" Style="border-radius: 8px;" Class="mt-1">Annuller redigering</MudButton>
                             }
                         </MudStack>
                     }
@@ -752,10 +779,10 @@
 
     private readonly string[] _dayNames = ["Man", "Tir", "Ons", "Tor", "Fre", "Lør", "Søn"];
     private readonly List<CalendarDayCell> _calendarCells = [];
-    private readonly List<KanbanEventCard> _allCards = [];
+    private readonly List<GodsEventCard> _allCards = [];
 
     private bool _isDrawerOpen;
-    private KanbanEventCard? _selectedCard;
+    private GodsEventCard? _selectedCard;
 
     // Create Drawer variables
     private bool _isCreateDrawerOpen;
@@ -781,13 +808,14 @@
     private int _editGuestCount = 100;
     private string _editCatering = "Gourmet Selskabsmenu";
     private string _editCoordinator = "Sarah Jenkins";
+    private decimal? _editPrice;
 
-    // Inline Subevent variables inside Details Drawer
+    // Inline SubEvent variables inside Details Drawer
     private string _subTitle = string.Empty;
     private TimeSpan? _subStart = new TimeSpan(12, 0, 0);
     private TimeSpan? _subEnd = new TimeSpan(13, 0, 0);
     private string _subLocation = "Den Store Lade";
-    private Guid? _editingSubeventId;
+    private Guid? _editingSubEventId;
 
     protected override async Task OnInitializedAsync()
     {
@@ -797,7 +825,7 @@
 
     private async Task LoadEventsAsync()
     {
-        var events = await PostgresService.FetchAllEventsAsync();
+        var events = await DatabaseService.FetchAllEventsAsync();
         _allCards.Clear();
         _allCards.AddRange(events);
         GenerateCalendarGrid();
@@ -865,7 +893,7 @@
         return style;
     }
 
-    private string GetCardStyle(KanbanEventCard card)
+    private string GetCardStyle(GodsEventCard card)
     {
         var baseStyle = "border-radius: 4px; padding: 4px 8px; font-size: 0.8rem;";
         if (card.EventSubtype == "Bryllup" || card.EventSubtype == "Wedding")
@@ -915,12 +943,12 @@
         StateHasChanged();
     }
 
-    private async Task OpenEventDetails(KanbanEventCard card)
+    private async Task OpenEventDetails(GodsEventCard card)
     {
         // Premium Optimistic UI: open drawer instantly with local data
         _selectedCard = card;
         _isDetailsEditing = false; // Reset to details mode
-        CancelEditSubevent();      // Reset subevent form
+        CancelEditSubEvent();      // Reset SubEvent form
         _isDrawerOpen = true;
         _logMessage = $"[Database] Henter seneste detaljer for '{card.Subject}' fra databasen...";
         StateHasChanged();
@@ -928,7 +956,7 @@
         try
         {
             // Pull the latest, fresh data from the database asynchronously to ensure real-time views
-            var events = await PostgresService.FetchAllEventsAsync();
+            var events = await DatabaseService.FetchAllEventsAsync();
             var freshCard = events.FirstOrDefault(e => e.GraphEventId == card.GraphEventId);
             if (freshCard != null)
             {
@@ -964,6 +992,7 @@
         _editGuestCount = _selectedCard.GuestCount;
         _editCatering = _selectedCard.CateringOption ?? "Gourmet Selskabsmenu";
         _editCoordinator = _selectedCard.AssignedCoordinator ?? "";
+        _editPrice = _selectedCard.Price;
 
         _isDetailsEditing = true;
     }
@@ -1001,11 +1030,12 @@
         _selectedCard.GuestCount = _editGuestCount;
         _selectedCard.CateringOption = _editCatering;
         _selectedCard.AssignedCoordinator = _editCoordinator;
+        _selectedCard.Price = _editPrice;
         _selectedCard.ColorHex = GetColorForSubtype(_editSubtype);
 
-        await PostgresService.SaveEventAsync(_selectedCard);
+        await DatabaseService.SaveEventAsync(_selectedCard);
 
-        var events = await PostgresService.FetchAllEventsAsync();
+        var events = await DatabaseService.FetchAllEventsAsync();
         _allCards.Clear();
         _allCards.AddRange(events);
 
@@ -1015,25 +1045,25 @@
         StateHasChanged();
     }
 
-    private void StartEditSubevent(Subevent sub)
+    private void StartEditSubEvent(SubEvent sub)
     {
-        _editingSubeventId = sub.Id;
+        _editingSubEventId = sub.Id;
         _subTitle = sub.Title;
         _subStart = sub.StartTime;
         _subEnd = sub.EndTime;
         _subLocation = sub.Location;
     }
 
-    private void CancelEditSubevent()
+    private void CancelEditSubEvent()
     {
-        _editingSubeventId = null;
+        _editingSubEventId = null;
         _subTitle = string.Empty;
         _subStart = new TimeSpan(12, 0, 0);
         _subEnd = new TimeSpan(13, 0, 0);
         _subLocation = "Den Store Lade";
     }
 
-    private async Task SaveSubevent()
+    private async Task SaveSubEvent()
     {
         if (_selectedCard is null) return;
 
@@ -1055,10 +1085,10 @@
             return;
         }
 
-        if (_editingSubeventId.HasValue)
+        if (_editingSubEventId.HasValue)
         {
-            // Edit existing subevent
-            var sub = _selectedCard.Subevents.FirstOrDefault(s => s.Id == _editingSubeventId.Value);
+            // Edit existing SubEvent
+            var sub = _selectedCard.SubEvents.FirstOrDefault(s => s.Id == _editingSubEventId.Value);
             if (sub != null)
             {
                 sub.Title = _subTitle;
@@ -1070,41 +1100,41 @@
         }
         else
         {
-            // Add new subevent
-            var newSub = new Subevent
+            // Add new SubEvent
+            var newSub = new SubEvent
             {
                 Title = _subTitle,
                 StartTime = _subStart.Value,
                 EndTime = _subEnd.Value,
                 Location = _subLocation
             };
-            if (_selectedCard.Subevents == null)
+            if (_selectedCard.SubEvents == null)
             {
-                _selectedCard.Subevents = [];
+                _selectedCard.SubEvents = [];
             }
-            _selectedCard.Subevents.Add(newSub);
+            _selectedCard.SubEvents.Add(newSub);
             _logMessage = $"[Succes] Del-begivenheden '{_subTitle}' blev tilføjet til programmet.";
         }
 
-        await PostgresService.SaveEventAsync(_selectedCard);
+        await DatabaseService.SaveEventAsync(_selectedCard);
 
-        var events = await PostgresService.FetchAllEventsAsync();
+        var events = await DatabaseService.FetchAllEventsAsync();
         _allCards.Clear();
         _allCards.AddRange(events);
 
         GenerateCalendarGrid();
-        CancelEditSubevent();
+        CancelEditSubEvent();
         StateHasChanged();
     }
 
-    private async Task DeleteSubevent(Subevent sub)
+    private async Task DeleteSubEvent(SubEvent sub)
     {
         if (_selectedCard is null) return;
 
-        _selectedCard.Subevents.Remove(sub);
-        await PostgresService.SaveEventAsync(_selectedCard);
+        _selectedCard.SubEvents.Remove(sub);
+        await DatabaseService.SaveEventAsync(_selectedCard);
 
-        var events = await PostgresService.FetchAllEventsAsync();
+        var events = await DatabaseService.FetchAllEventsAsync();
         _allCards.Clear();
         _allCards.AddRange(events);
 
@@ -1185,7 +1215,7 @@
             ? $"Manuelt oprettet reservation. Forplejning: {_newCatering}."
             : $"Kundeforespørgsel modtaget via online kalender. Forplejning: {_newCatering}.";
 
-        var newCard = new KanbanEventCard
+        var newCard = new GodsEventCard
         {
             GraphEventId = $"custom-evt-{Guid.NewGuid()}",
             MetadataId = Guid.NewGuid(),
@@ -1205,9 +1235,9 @@
             ActionItems = GetDefaultActionItems(_newSubtype, _newArea, _newGuestCount, _newCatering, coordinator)
         };
 
-        await PostgresService.SaveEventAsync(newCard);
+        await DatabaseService.SaveEventAsync(newCard);
 
-        var events = await PostgresService.FetchAllEventsAsync();
+        var events = await DatabaseService.FetchAllEventsAsync();
         _allCards.Clear();
         _allCards.AddRange(events);
 
@@ -1275,7 +1305,7 @@
         GenerateCalendarGrid();
     }
 
-    private async Task DeleteEventAsync(KanbanEventCard? card)
+    private async Task DeleteEventAsync(GodsEventCard? card)
     {
         if (card is null) return;
 
@@ -1288,7 +1318,7 @@
 
         if (confirmed == true)
         {
-            await PostgresService.DeleteEventAsync(card.GraphEventId);
+            await DatabaseService.DeleteEventAsync(card.GraphEventId);
             _isDrawerOpen = false;
             _selectedCard = null;
             _logMessage = $"[Succes] Selskabet '{card.Subject}' blev slettet fra database og kalender.";
@@ -1309,7 +1339,7 @@
     // e-conomic Billing Action
     private bool _isBookingInvoice = false;
     
-    private async Task BookEconomicInvoiceAsync(KanbanEventCard card)
+    private async Task BookEconomicInvoiceAsync(GodsEventCard card)
     {
         _isBookingInvoice = true;
         StateHasChanged();
@@ -1324,7 +1354,7 @@
         card.EconomicPaymentLink = paymentLink;
         
         // Save back to PostgreSQL/Supabase live!
-        await PostgresService.SaveEventAsync(card);
+        await DatabaseService.SaveEventAsync(card);
         
         _isBookingInvoice = false;
         StateHasChanged();
@@ -1368,6 +1398,7 @@
     {
         public DateTime Date { get; set; }
         public bool IsCurrentMonth { get; set; }
-        public List<KanbanEventCard> Cards { get; set; } = [];
+        public List<GodsEventCard> Cards { get; set; } = [];
     }
 }
+

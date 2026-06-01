@@ -8,19 +8,24 @@ using Microsoft.Graph.Models;
 
 namespace AIDA.M365.Services;
 
-public sealed class OutlookCalendarEventService : IOutlookCalendarEventService
+/// <summary>
+/// Production Microsoft Graph synchronization service for gods calendar events.
+/// Updates real Outlook Shared Calendar events using Graph API v5.
+/// </summary>
+public sealed class GraphCalendarService : IGodsCalendarService
 {
     private readonly GraphServiceClient _graphServiceClient;
-    private readonly ILogger<OutlookCalendarEventService> _logger;
+    private readonly ILogger<GraphCalendarService> _logger;
 
-    public OutlookCalendarEventService(
+    public GraphCalendarService(
         GraphServiceClient graphServiceClient,
-        ILogger<OutlookCalendarEventService> logger)
+        ILogger<GraphCalendarService> logger)
     {
-        _graphServiceClient = graphServiceClient;
-        _logger = logger;
+        _graphServiceClient = graphServiceClient ?? throw new ArgumentNullException(nameof(graphServiceClient));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
+    /// <inheritdoc />
     public async Task UpdateEventTimeAsync(
         string graphEventId,
         DateTimeOffset newStartUtc,
@@ -34,7 +39,7 @@ public sealed class OutlookCalendarEventService : IOutlookCalendarEventService
 
         if (newEndUtc <= newStartUtc)
         {
-            throw new ArgumentException("End must be greater than start.", nameof(newEndUtc));
+            throw new ArgumentException("End date must be greater than start date.", nameof(newEndUtc));
         }
 
         var patch = new Event
@@ -52,7 +57,7 @@ public sealed class OutlookCalendarEventService : IOutlookCalendarEventService
         };
 
         _logger.LogInformation(
-            "Updating Outlook event {EventId} with Start={StartUtc} and End={EndUtc}",
+            "[Graph Calendar] Patching real Outlook event {EventId} (Start={StartUtc}, End={EndUtc})",
             graphEventId,
             newStartUtc,
             newEndUtc);

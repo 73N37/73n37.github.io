@@ -16,45 +16,48 @@ using Xunit;
 
 namespace AIDA.M365.Tests.Components;
 
-public class KanbanBoardTests : TestContext
+/// <summary>
+/// Component tests verifying the visual layout, drop zone counts, and columns inside GodsKanbanBoard.
+/// </summary>
+public class GodsKanbanBoardTests : TestContext
 {
-    public KanbanBoardTests()
+    public GodsKanbanBoardTests()
     {
-        // Add MudBlazor services
+        // Register MudBlazor styling services in the bUnit context
         Services.AddMudServices();
         
-        // Mock dependencies
-        var mockService = new Mock<IEventCommandCenterService>();
+        // Mock Command Center Service operations
+        var mockService = new Mock<IGodsCommandCenterService>();
         mockService
-            .Setup(x => x.MoveCardAsync(It.IsAny<MoveCardRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(MoveCardResult.Success());
+            .Setup(x => x.MoveCardAsync(It.IsAny<EventCardMoveRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(EventCardMoveResult.Success());
         mockService
-            .Setup(x => x.SummarizeCardAsync(It.IsAny<KanbanEventCard>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(CardSummaryResult.Success("summary", ["action"]));
+            .Setup(x => x.SummarizeCardAsync(It.IsAny<GodsEventCard>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(EventCardSummaryResult.Success("summary", ["action"]));
         Services.AddSingleton(mockService.Object);
         
-        var mockLogger = new Mock<ILogger<KanbanBoard>>();
+        var mockLogger = new Mock<ILogger<GodsKanbanBoard>>();
         Services.AddSingleton(mockLogger.Object);
 
-        // Mock MudBlazor JS calls
+        // Emulates JSInterop drag-and-drop registrations used internally by MudBlazor
         JSInterop.SetupVoid("mudDragAndDrop.initDropZone", _ => true);
         JSInterop.SetupVoid("mudDragAndDrop.initContainer", _ => true);
         JSInterop.Setup<BoundingClientRect>("mudElementRef.getBoundingClientRect", _ => true);
     }
 
     [Fact]
-    public void KanbanBoard_ShouldRenderSections()
+    public void GodsKanbanBoard_ShouldRenderSections()
     {
         // Arrange
-        var sections = new List<KanbanSectionDefinition>
+        var sections = new List<GodsKanbanSection>
         {
             new() { Key = "todo", Title = "To Do", DayOffsetFromTodayUtc = 0, StartHourUtc = 9 },
             new() { Key = "done", Title = "Done", DayOffsetFromTodayUtc = 1, StartHourUtc = 9 }
         };
-        var cards = new List<KanbanEventCard>();
+        var cards = new List<GodsEventCard>();
 
         // Act
-        var cut = RenderComponent<KanbanBoard>(parameters => parameters
+        var cut = RenderComponent<GodsKanbanBoard>(parameters => parameters
             .Add(p => p.Sections, sections)
             .Add(p => p.Cards, cards)
         );

@@ -10,23 +10,20 @@ using System.Threading.Tasks;
 
 namespace AIDA.M365.Tests.Services;
 
-public class OutlookCalendarEventServiceTests
+/// <summary>
+/// Unit tests verifying calendar event start/end date range assertions and validation rules.
+/// </summary>
+public class GraphCalendarServiceTests
 {
     private readonly Mock<GraphServiceClient> _mockGraphClient;
-    private readonly Mock<ILogger<OutlookCalendarEventService>> _mockLogger;
-    private readonly OutlookCalendarEventService _service;
+    private readonly Mock<ILogger<GraphCalendarService>> _mockLogger;
+    private readonly GraphCalendarService _service;
 
-    public OutlookCalendarEventServiceTests()
+    public GraphCalendarServiceTests()
     {
-        // Note: Mocking GraphServiceClient v5 can be complex due to its fluent interface.
-        // In a real scenario, we might use a wrapper or the built-in testing support if available.
-        // For this example, we'll focus on the logic and assume the client structure.
-        
-        // This is a simplified mock setup. 
-        // Real Graph v5 mocking often requires mocking the RequestBuilders.
         _mockGraphClient = new Mock<GraphServiceClient>(new Mock<Microsoft.Kiota.Abstractions.Authentication.IAuthenticationProvider>().Object, "https://graph.microsoft.com/v1.0");
-        _mockLogger = new Mock<ILogger<OutlookCalendarEventService>>();
-        _service = new OutlookCalendarEventService(_mockGraphClient.Object, _mockLogger.Object);
+        _mockLogger = new Mock<ILogger<GraphCalendarService>>();
+        _service = new GraphCalendarService(_mockGraphClient.Object, _mockLogger.Object);
     }
 
     [Fact]

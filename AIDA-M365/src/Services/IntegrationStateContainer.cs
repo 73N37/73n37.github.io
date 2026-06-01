@@ -3,13 +3,18 @@ using Microsoft.JSInterop;
 
 namespace AIDA.M365.Services;
 
+/// <summary>
+/// A central container managing dynamic integration configurations, authentication states,
+/// database host targets, and UI preferences (e.g. Dark Obsidian theme status) for the dashboard.
+/// Persists and masked-encrypts key data using browser LocalStorage.
+/// </summary>
 public sealed class IntegrationStateContainer
 {
     private readonly IJSInProcessRuntime? _js;
 
     private bool _isM365Connected = true;
     private bool _isDynamicsConnected = true;
-    private bool _isPostgresConnected = true; // Connected by default now!
+    private bool _isPostgresConnected = true; // Connected by default
     private bool _isDarkMode = false; // Exclusively light cream-linen/gold style by default
 
     // Default to Local PostgreSQL / PostgREST
@@ -333,8 +338,8 @@ public sealed class IntegrationStateContainer
 
     public bool IsSystemHealthy => IsM365Connected;
 
-    private System.Collections.Generic.List<AIDA.M365.Models.KanbanEventCard> _cards = [];
-    public System.Collections.Generic.List<AIDA.M365.Models.KanbanEventCard> Cards
+    private System.Collections.Generic.List<AIDA.M365.Models.GodsEventCard> _cards = [];
+    public System.Collections.Generic.List<AIDA.M365.Models.GodsEventCard> Cards
     {
         get => _cards;
         set

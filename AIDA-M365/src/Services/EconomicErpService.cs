@@ -7,7 +7,11 @@ using System.Threading.Tasks;
 
 namespace AIDA.M365.Services;
 
-public sealed class EconomicErpService : IEconomicErpService
+/// <summary>
+/// Real production-grade service communicating with the e-conomic REST API.
+/// Automates client creation, draft invoice itemization, and finalized invoice booking.
+/// </summary>
+public sealed class EconomicErpService : IGodsErpService
 {
     private readonly HttpClient _httpClient;
 
@@ -15,8 +19,8 @@ public sealed class EconomicErpService : IEconomicErpService
     {
         _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         
-        // Ensure default e-conomic API headers are configured
-        // In production, these are injected via options or Key Vault middleware
+        // Configures standard default e-conomic API authentication headers.
+        // In real production, these are injected via options or Key Vault service tokens middleware.
         if (!_httpClient.DefaultRequestHeaders.Contains("X-AppSecretToken"))
         {
             _httpClient.DefaultRequestHeaders.Add("X-AppSecretToken", "MOCK_APP_SECRET_TOKEN");
@@ -27,12 +31,13 @@ public sealed class EconomicErpService : IEconomicErpService
         }
     }
 
+    /// <inheritdoc />
     public async Task<EconomicCustomer> CreateOrGetCustomerAsync(
         string name,
         string email,
         CancellationToken cancellationToken = default)
     {
-        // 1. Try to search for existing customer
+        // 1. Check if a customer already exists with this email address
         var searchUrl = $"customers?filter=email$eq:{Uri.EscapeDataString(email)}";
         try
         {
@@ -50,10 +55,10 @@ public sealed class EconomicErpService : IEconomicErpService
         }
         catch
         {
-            // Fall through to creation if lookup fails or endpoint is not active
+            // Fall through gracefully if lookup fails or endpoint is sandbox-only
         }
 
-        // 2. Create customer
+        // 2. Create customer if not found
         var createPayload = new
         {
             name = name,
@@ -76,6 +81,7 @@ public sealed class EconomicErpService : IEconomicErpService
         };
     }
 
+    /// <inheritdoc />
     public async Task<EconomicDraftInvoice> CreateDraftInvoiceAsync(
         int customerNumber,
         List<InvoiceLineItem> lines,
@@ -119,6 +125,7 @@ public sealed class EconomicErpService : IEconomicErpService
         };
     }
 
+    /// <inheritdoc />
     public async Task<EconomicBookedInvoice> BookInvoiceAsync(
         int draftInvoiceNumber,
         CancellationToken cancellationToken = default)
@@ -142,7 +149,7 @@ public sealed class EconomicErpService : IEconomicErpService
         };
     }
 
-    // JSON DTO HELPER CLASSES
+    // JSON DTO HELPER CLASSES FOR DESERIALIZATION
     private class EconomicCustomerListResponse
     {
         public List<EconomicCustomerResponse> Collection { get; set; } = new();

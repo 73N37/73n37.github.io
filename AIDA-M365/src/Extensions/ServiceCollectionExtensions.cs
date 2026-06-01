@@ -4,27 +4,22 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace AIDA.M365.Extensions;
 
+/// <summary>
+/// Provides extension methods to register gods schedule management services configured for production cloud environments.
+/// </summary>
 public static class ServiceCollectionExtensions
 {
+    /// <summary>
+    /// Registers Gods-centric services with production Graph API, Dynamics 365, and e-conomic integrations.
+    /// </summary>
     public static IServiceCollection AddAidaKanbanServices(
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.Configure<AzureOpenAiOptions>(options =>
-        {
-            var section = configuration.GetSection("AzureOpenAI");
-            options.Endpoint = section[nameof(AzureOpenAiOptions.Endpoint)] ?? string.Empty;
-            options.DeploymentName = section[nameof(AzureOpenAiOptions.DeploymentName)] ?? string.Empty;
-            options.ApiVersion = section[nameof(AzureOpenAiOptions.ApiVersion)] ?? options.ApiVersion;
-            options.ApiKey = section[nameof(AzureOpenAiOptions.ApiKey)];
-        });
-
-        services.AddScoped<IOutlookCalendarEventService, OutlookCalendarEventService>();
-        services.AddScoped<ICardCustomizationRepository, CardCustomizationApiRepository>();
-        services.AddScoped<IAiCardSummaryService, AzureOpenAiCardSummaryService>();
-        services.AddScoped<IEventCommandCenterService, EventCommandCenterService>();
-        services.AddScoped<IEconomicErpService, EconomicErpService>();
-        services.AddScoped<IBookingAcknowledgementService, BookingAcknowledgementService>();
+        services.AddScoped<IGodsCalendarService, GraphCalendarService>();
+        services.AddScoped<IGodsCommandCenterService, CommandCenterService>();
+        services.AddScoped<IGodsErpService, EconomicErpService>();
+        services.AddScoped<IGodsDatabaseService, GodsDatabaseService>();
 
         return services;
     }

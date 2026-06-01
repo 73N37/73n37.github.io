@@ -3,9 +3,9 @@
 @using Microsoft.AspNetCore.Components
 @using Microsoft.Extensions.Logging
 @using MudBlazor
-@inject IEventCommandCenterService EventCommandCenterService
+@inject IGodsCommandCenterService CommandCenterService
 @inject ISnackbar Snackbar
-@inject ILogger<KanbanBoard> Logger
+@inject ILogger<GodsKanbanBoard> Logger
 @inject IDialogService DialogService
 
 <MudPaper Class="position-relative pa-0" Elevation="0" Style="background: transparent;">
@@ -16,7 +16,7 @@
         </MudAlert>
     }
 
-    <MudDropContainer T="KanbanEventCard"
+    <MudDropContainer T="GodsEventCard"
                       Items="Cards"
                       ItemsSelector="@((item, zoneKey) => item.SectionKey == zoneKey)"
                       ItemUpdated="HandleItemUpdatedAsync"
@@ -30,14 +30,8 @@
                             <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="mb-4">
                                 <MudIcon Icon="@Icons.Material.Filled.Category" Color="Color.Primary" Size="Size.Small" />
                                 <MudText Typo="Typo.subtitle1" Class="font-weight-bold flex-grow-1">@sectionDef.Title</MudText>
-                                <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                               Size="Size.Small"
-                                               Color="Color.Error"
-                                               OnClick="() => DeleteSectionAsync(sectionDef)"
-                                               title="Delete this section"
-                                               Style="background: rgba(244,67,54,0.08); border-radius: 8px;" />
                             </MudStack>
-                            <MudDropZone T="KanbanEventCard"
+                            <MudDropZone T="GodsEventCard"
                                          Identifier="@sectionDef.Key"
                                          Class="mud-drop-zone flex-grow-1" />
                         </MudPaper>
@@ -241,18 +235,20 @@
 
                 <MudTextField @bind-Value="_editingCoordinator" Label="Ansvarlig Koordinator" Variant="Variant.Outlined" Margin="Margin.Dense" />
 
-                <!-- Timetable / Subevents Section inside Kanban Edit Drawer -->
+                <MudNumericField @bind-Value="_editingPrice" Label="Samlet Selskabspris" Variant="Variant.Outlined" Margin="Margin.Dense" Min="0" HideSpinButtons="true" Format="N0" Adornment="Adornment.End" AdornmentText="kr." />
+
+                <!-- Timetable / SubEvents Section inside Kanban Edit Drawer -->
                 <MudPaper Class="pa-4 rounded-lg" Outlined="true" Style="background-color: white;">
                     <MudText Typo="Typo.subtitle2" Class="font-weight-bold mb-2" Style="color: #2C3E50;">Dagens Program (Del-begivenheder)</MudText>
                     
-                    @if (_editingCard.Subevents == null || _editingCard.Subevents.Count == 0)
+                    @if (_editingCard.SubEvents == null || _editingCard.SubEvents.Count == 0)
                     {
                         <MudText Typo="Typo.caption" Class="text-muted d-block mb-2">Ingen del-begivenheder planlagt endnu.</MudText>
                     }
                     else
                     {
                         <MudStack Spacing="2" Class="mb-3">
-                            @foreach (var sub in _editingCard.Subevents.OrderBy(s => s.StartTime))
+                            @foreach (var sub in _editingCard.SubEvents.OrderBy(s => s.StartTime))
                             {
                                 <MudPaper Class="pa-3 rounded-lg" Outlined="true" Style="background-color: #FAF9F6; border-left: 4px solid #D4AF37;">
                                     <MudStack Row="true" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
@@ -266,8 +262,8 @@
                                             </MudText>
                                         </MudStack>
                                         <MudStack Row="true" Spacing="1">
-                                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Color="Color.Primary" OnClick="() => StartEditSubevent(sub)" />
-                                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" OnClick="() => DeleteSubevent(sub)" />
+                                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Color="Color.Primary" OnClick="() => StartEditSubEvent(sub)" />
+                                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" OnClick="() => DeleteSubEvent(sub)" />
                                         </MudStack>
                                     </MudStack>
                                 </MudPaper>
@@ -292,12 +288,12 @@
                             <MudSelectItem Value="@("Hovedbygningen")">Hovedbygningen</MudSelectItem>
                             <MudSelectItem Value="@("Søparken")">Søparken</MudSelectItem>
                         </MudSelect>
-                        <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="SaveSubevent" Style="background-color: #D4AF37; color: white; border-radius: 8px; font-weight: bold;">
-                            @(_editingSubeventId.HasValue ? "Opdater Aktivitet" : "Tilføj Aktivitet")
+                        <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="SaveSubEvent" Style="background-color: #D4AF37; color: white; border-radius: 8px; font-weight: bold;">
+                            @(_editingSubEventId.HasValue ? "Opdater Aktivitet" : "Tilføj Aktivitet")
                         </MudButton>
-                        @if (_editingSubeventId.HasValue)
+                        @if (_editingSubEventId.HasValue)
                         {
-                            <MudButton Variant="Variant.Outlined" OnClick="CancelEditSubevent" Style="border-radius: 8px;" Class="mt-1">Annuller redigering</MudButton>
+                            <MudButton Variant="Variant.Outlined" OnClick="CancelEditSubEvent" Style="border-radius: 8px;" Class="mt-1">Annuller redigering</MudButton>
                         }
                     </MudStack>
                 </MudPaper>
@@ -369,43 +365,44 @@
 
 @code {
     [Parameter, EditorRequired]
-    public required IList<KanbanSectionDefinition> Sections { get; set; }
+    public required IList<GodsKanbanSection> Sections { get; set; }
 
     [Parameter, EditorRequired]
-    public required IList<KanbanEventCard> Cards { get; set; }
+    public required IList<GodsEventCard> Cards { get; set; }
 
     [Parameter]
-    public EventCallback<KanbanEventCard> CardUpdated { get; set; }
+    public EventCallback<GodsEventCard> CardUpdated { get; set; }
 
     [Parameter]
-    public EventCallback<KanbanSectionDefinition> SectionDeleted { get; set; }
+    public EventCallback<GodsKanbanSection> SectionDeleted { get; set; }
 
     [Parameter]
-    public EventCallback<KanbanEventCard> CardDeleted { get; set; }
+    public EventCallback<GodsEventCard> CardDeleted { get; set; }
 
     private readonly HashSet<string> _updatingCardIds = new();
     private string? _errorMessage;
 
     // Live Inquiry Editor Drawer variables
     private bool _editDrawerOpen;
-    private KanbanEventCard? _editingCard;
+    private GodsEventCard? _editingCard;
     private string _editingSubject = string.Empty;
     private string _editingSubtype = string.Empty;
     private string _editingArea = string.Empty;
     private int _editingGuests = 1;
     private string _editingCatering = string.Empty;
     private string _editingCoordinator = string.Empty;
+    private decimal? _editingPrice;
 
-    // Inline Subevent variables inside Edit Drawer
+    // Inline SubEvent variables inside Edit Drawer
     private string _subTitle = string.Empty;
     private TimeSpan? _subStart = new TimeSpan(12, 0, 0);
     private TimeSpan? _subEnd = new TimeSpan(13, 0, 0);
     private string _subLocation = "Den Store Lade";
-    private Guid? _editingSubeventId;
+    private Guid? _editingSubEventId;
 
     // OpenAI Smart Summary Dialog variables
     private bool _showAiDialog;
-    private KanbanEventCard? _selectedCardForSummary;
+    private GodsEventCard? _selectedCardForSummary;
     private List<string> _actionItemsCopy = new();
     private List<bool> _actionItemChecked = new();
     private readonly DialogOptions _dialogOptions = new() { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
@@ -413,7 +410,7 @@
     // In-memory Azure SQL custom metadata simulation for checklist item completion
     private readonly Dictionary<(string CardId, string ActionText), bool> _actionItemsCompleted = new();
 
-    private async Task HandleItemUpdatedAsync(MudItemDropInfo<KanbanEventCard> dropInfo)
+    private async Task HandleItemUpdatedAsync(MudItemDropInfo<GodsEventCard> dropInfo)
     {
         var card = dropInfo.Item;
         if (card is null)
@@ -448,8 +445,8 @@
 
         try
         {
-            var result = await EventCommandCenterService.MoveCardAsync(
-                new MoveCardRequest(card, destinationSection.Key, newStartUtc, newEndUtc));
+            var result = await CommandCenterService.MoveCardAsync(
+                new EventCardMoveRequest(card, destinationSection.Key, newStartUtc, newEndUtc));
 
             if (!result.Succeeded)
             {
@@ -491,14 +488,14 @@
         }
     }
 
-    private void RollbackCard(KanbanEventCard card, string origSection, DateTimeOffset origStart, DateTimeOffset origEnd)
+    private void RollbackCard(GodsEventCard card, string origSection, DateTimeOffset origStart, DateTimeOffset origEnd)
     {
         card.SectionKey = origSection;
         card.StartUtc = origStart;
         card.EndUtc = origEnd;
     }
 
-    private async Task RevertMoveAsync(KanbanEventCard card, string targetSectionKey, DateTimeOffset targetStart, DateTimeOffset targetEnd)
+    private async Task RevertMoveAsync(GodsEventCard card, string targetSectionKey, DateTimeOffset targetStart, DateTimeOffset targetEnd)
     {
         // Revert local UI state optimistically
         var originalSectionKey = card.SectionKey;
@@ -514,8 +511,8 @@
 
         try
         {
-            var result = await EventCommandCenterService.MoveCardAsync(
-                new MoveCardRequest(card, targetSectionKey, targetStart, targetEnd));
+            var result = await CommandCenterService.MoveCardAsync(
+                new EventCardMoveRequest(card, targetSectionKey, targetStart, targetEnd));
 
             if (!result.Succeeded)
             {
@@ -545,8 +542,8 @@
     }
 
     private static (DateTimeOffset StartUtc, DateTimeOffset EndUtc) RecalculateTimes(
-        KanbanEventCard card,
-        KanbanSectionDefinition destinationSection)
+        GodsEventCard card,
+        GodsKanbanSection destinationSection)
     {
         var duration = card.Duration;
         var baseDayUtc = DateTimeOffset.UtcNow.Date.AddDays(destinationSection.DayOffsetFromTodayUtc);
@@ -557,7 +554,7 @@
         return (newStartUtc, newStartUtc.Add(duration));
     }
 
-    private async Task DeleteSectionAsync(KanbanSectionDefinition section)
+    private async Task DeleteSectionAsync(GodsKanbanSection section)
     {
         if (SectionDeleted.HasDelegate)
         {
@@ -566,7 +563,7 @@
     }
 
     // Live Inquiry Editor Drawer Implementation
-    private Task OpenEditDrawerAsync(KanbanEventCard card)
+    private Task OpenEditDrawerAsync(GodsEventCard card)
     {
         _editingCard = card;
         _editingSubject = card.Subject;
@@ -575,8 +572,9 @@
         _editingGuests = card.GuestCount;
         _editingCatering = card.CateringOption ?? "Fine Dining";
         _editingCoordinator = card.AssignedCoordinator ?? "";
+        _editingPrice = card.Price;
         
-        CancelEditSubevent(); // Reset subevent form on open
+        CancelEditSubEvent(); // Reset SubEvent form on open
         
         _editDrawerOpen = true;
         StateHasChanged();
@@ -587,7 +585,7 @@
     {
         _editDrawerOpen = false;
         _editingCard = null;
-        CancelEditSubevent(); // Reset subevent form on close
+        CancelEditSubEvent(); // Reset SubEvent form on close
     }
 
     private async Task SaveEditDetailsAsync()
@@ -600,12 +598,13 @@
         _editingCard.GuestCount = _editingGuests;
         _editingCard.CateringOption = _editingCatering;
         _editingCard.AssignedCoordinator = _editingCoordinator;
+        _editingCard.Price = _editingPrice;
 
         var savedCard = _editingCard;
 
         _editDrawerOpen = false;
         _editingCard = null;
-        CancelEditSubevent();
+        CancelEditSubEvent();
         
         Snackbar.Add("Selskabsoplysninger blev gemt i Gods-databasen.", Severity.Success);
 
@@ -631,7 +630,7 @@
             var cardToDelete = _editingCard;
             _editDrawerOpen = false;
             _editingCard = null;
-            CancelEditSubevent();
+            CancelEditSubEvent();
 
             if (CardDeleted.HasDelegate)
             {
@@ -642,25 +641,25 @@
         }
     }
 
-    private void StartEditSubevent(Subevent sub)
+    private void StartEditSubEvent(SubEvent sub)
     {
-        _editingSubeventId = sub.Id;
+        _editingSubEventId = sub.Id;
         _subTitle = sub.Title;
         _subStart = sub.StartTime;
         _subEnd = sub.EndTime;
         _subLocation = sub.Location;
     }
 
-    private void CancelEditSubevent()
+    private void CancelEditSubEvent()
     {
-        _editingSubeventId = null;
+        _editingSubEventId = null;
         _subTitle = string.Empty;
         _subStart = new TimeSpan(12, 0, 0);
         _subEnd = new TimeSpan(13, 0, 0);
         _subLocation = "Den Store Lade";
     }
 
-    private void SaveSubevent()
+    private void SaveSubEvent()
     {
         if (_editingCard is null) return;
 
@@ -682,10 +681,10 @@
             return;
         }
 
-        if (_editingSubeventId.HasValue)
+        if (_editingSubEventId.HasValue)
         {
-            // Edit existing subevent
-            var sub = _editingCard.Subevents.FirstOrDefault(s => s.Id == _editingSubeventId.Value);
+            // Edit existing SubEvent
+            var sub = _editingCard.SubEvents.FirstOrDefault(s => s.Id == _editingSubEventId.Value);
             if (sub != null)
             {
                 sub.Title = _subTitle;
@@ -697,44 +696,44 @@
         }
         else
         {
-            // Add new subevent
-            var newSub = new Subevent
+            // Add new SubEvent
+            var newSub = new SubEvent
             {
                 Title = _subTitle,
                 StartTime = _subStart.Value,
                 EndTime = _subEnd.Value,
                 Location = _subLocation
             };
-            if (_editingCard.Subevents == null)
+            if (_editingCard.SubEvents == null)
             {
-                _editingCard.Subevents = [];
+                _editingCard.SubEvents = [];
             }
-            _editingCard.Subevents.Add(newSub);
+            _editingCard.SubEvents.Add(newSub);
             Snackbar.Add($"Del-begivenheden '{_subTitle}' blev tilføjet til programmet.", Severity.Success);
         }
 
-        CancelEditSubevent();
+        CancelEditSubEvent();
         StateHasChanged();
     }
 
-    private void DeleteSubevent(Subevent sub)
+    private void DeleteSubEvent(SubEvent sub)
     {
         if (_editingCard is null) return;
 
-        _editingCard.Subevents.Remove(sub);
+        _editingCard.SubEvents.Remove(sub);
         Snackbar.Add($"Del-begivenheden '{sub.Title}' blev fjernet fra programmet.", Severity.Info);
         StateHasChanged();
     }
 
     // OpenAI Smart Summarize Dialog Implementation
-    private async Task SummarizeCardAsync(KanbanEventCard card)
+    private async Task SummarizeCardAsync(GodsEventCard card)
     {
         _updatingCardIds.Add(card.GraphEventId);
         _errorMessage = null;
 
         try
         {
-            var result = await EventCommandCenterService.SummarizeCardAsync(card);
+            var result = await CommandCenterService.SummarizeCardAsync(card);
             if (!result.Succeeded)
             {
                 _errorMessage = result.ErrorMessage;
@@ -807,8 +806,9 @@
         return _actionItemsCompleted.TryGetValue((cardId, actionText), out var completed) && completed;
     }
 
-    private static string? GetCardStyle(KanbanEventCard card) =>
+    private static string? GetCardStyle(GodsEventCard card) =>
         string.IsNullOrWhiteSpace(card.ColorHex)
             ? null
             : $"border-left: 5px solid {card.ColorHex};";
 }
+

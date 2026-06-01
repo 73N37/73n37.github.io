@@ -3,7 +3,7 @@
 @using MudBlazor
 @inject AIDA.M365.Services.IntegrationStateContainer StateContainer
 @inject ISnackbar Snackbar
-@inject AIDA.M365.Services.IPostgresDatabaseService PostgresService
+@inject AIDA.M365.Services.IGodsDatabaseService DatabaseService
 
 <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="pa-6" Style="background-color: #FAF9F6; min-height: 100vh; font-family: 'Playfair Display', 'Inter', sans-serif;">
     <MudStack Spacing="6">
@@ -429,7 +429,7 @@ CREATE TABLE IF NOT EXISTS events (
     economic_payment_link VARCHAR(500)
 );
 
-CREATE TABLE IF NOT EXISTS subevents (
+CREATE TABLE IF NOT EXISTS SubEvents (
     id UUID PRIMARY KEY,
     event_id VARCHAR(100) REFERENCES events(id) ON DELETE CASCADE,
     title VARCHAR(200) NOT NULL,
@@ -576,7 +576,7 @@ CREATE TABLE IF NOT EXISTS subevents (
 
     private async Task SeedDemoData()
     {
-        await PostgresService.SeedDemoDataToDbAsync();
+        await DatabaseService.SeedDemoDataToDbAsync();
         _statusMessage = "[PostgreSQL Link] PostgreSQL-databasen er blevet fyldt med realistisk demo-data (Bryllupper, Konferencer)!";
         Snackbar.Add("Demo-data fyldt i PostgreSQL!", Severity.Success);
     }
@@ -687,13 +687,13 @@ CREATE TABLE IF NOT EXISTS subevents (
                 _diagLogs.Add($"[{DateTime.Now:HH:mm:ss} PGSQL] Kontakter Supabase HTTPS API-endepunkt på https://{_pgHost}...");
                 _diagLogs.Add($"[{DateTime.Now:HH:mm:ss} PGSQL] Authentification header verificeret. API status: 200 OK.");
                 _diagLogs.Add($"[{DateTime.Now:HH:mm:ss} PGSQL] Supabase Cloud Database '{_pgHost}' er klar. Tabeller verificeret.");
-                _diagLogs.Add($"[{DateTime.Now:HH:mm:ss} PGSQL] Kontrollerer tabeller: 'events' (3 rækker), 'subevents' (9 rækker). HTTPS-synkronisering OK.");
+                _diagLogs.Add($"[{DateTime.Now:HH:mm:ss} PGSQL] Kontrollerer tabeller: 'events' (3 rækker), 'SubEvents' (9 rækker). HTTPS-synkronisering OK.");
             }
             else
             {
                 _diagLogs.Add($"[{DateTime.Now:HH:mm:ss} PGSQL] Etablerer sikker SSL-tunnel til {_pgHost}:{_pgPort}...");
                 _diagLogs.Add($"[{DateTime.Now:HH:mm:ss} PGSQL] Database '{_pgDatabase}' fundet. Forbindelse bekræftet (PostgreSQL 16.2 (Debian)).");
-                _diagLogs.Add($"[{DateTime.Now:HH:mm:ss} PGSQL] Kontrollerer tabeller: 'events' (3 rækker), 'subevents' (9 rækker). Synkronisering OK.");
+                _diagLogs.Add($"[{DateTime.Now:HH:mm:ss} PGSQL] Kontrollerer tabeller: 'events' (3 rækker), 'SubEvents' (9 rækker). Synkronisering OK.");
             }
         }
         else
@@ -731,3 +731,4 @@ CREATE TABLE IF NOT EXISTS subevents (
         StateHasChanged();
     }
 }
+
