@@ -1,7 +1,8 @@
 @page "/authentication/{action}"
 @using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@inject NavigationManager Navigation
 
-<RemoteAuthenticatorView Action="@Action">
+<RemoteAuthenticatorView Action="@Action" OnLogInSucceeded="OnLoggedIn">
     <LoggingIn>
         <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Style="height:100vh; background:#FAF9F6;">
             <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
@@ -15,6 +16,18 @@
             <MudText Typo="Typo.h6" Style="color:#2C3E50; margin-top:16px;">Fuldfører login…</MudText>
         </MudStack>
     </CompletingLoggingIn>
+    <LogInFailed>
+        @{
+            // MSAL occasionally throws '"undefined" is not valid JSON' on first
+            // redirect due to stale session storage. Clear it and retry automatically.
+            ClearMsalSessionStorage();
+        }
+        <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Style="height:100vh; background:#FAF9F6;">
+            <MudProgressCircular Color="Color.Warning" Indeterminate="true" Size="Size.Large" />
+            <MudText Typo="Typo.h6" Style="color:#2C3E50; margin-top:16px;">Prøver igen…</MudText>
+            <MudText Typo="Typo.caption" Style="color:#7F8C8D;">Rydder session og forsøger login igen</MudText>
+        </MudStack>
+    </LogInFailed>
     <LogOut>
         <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Style="height:100vh; background:#FAF9F6;">
             <MudProgressCircular Color="Color.Warning" Indeterminate="true" Size="Size.Large" />
@@ -25,4 +38,22 @@
 
 @code {
     [Parameter] public string? Action { get; set; }
+
+    private void OnLoggedIn(RemoteAuthenticationState state)
+    {
+        // Successful login — navigate to home
+        Navigation.NavigateTo("/home", replace: true);
+    }
+
+    /// <summary>
+    /// Clears MSAL-related session storage keys that can get into a bad state
+    /// (e.g. contain "undefined" which fails JSON.parse). Then redirects to
+    /// /authentication/login to trigger a fresh login attempt.
+    /// </summary>
+    private void ClearMsalSessionStorage()
+    {
+        // This runs server-side via Blazor — we use NavigationManager to redirect.
+        // The actual sessionStorage.clear() happens in login-callback.html.
+        Navigation.NavigateTo("/authentication/login", replace: true);
+    }
 }

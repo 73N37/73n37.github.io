@@ -63,14 +63,17 @@ public sealed class OutlookGodsDatabaseService : IGodsDatabaseService
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "[Outlook DB] Live fetch failed, using in-memory cache.");
+                _logger.LogWarning(ex, "[Outlook DB] Live fetch failed, using demo fallback.");
                 _stateContainer.DidLastFetchSucceed = false;
+                _stateContainer.IsOutlookConnected  = false;
+                // Clear any stale pre-login demo cards so fresh demo data loads below
+                _stateContainer.Cards.Clear();
             }
         }
         else
         {
             _logger.LogInformation("[Outlook DB] User not authenticated. Using demo fallback.");
-            _stateContainer.IsOutlookConnected = false;
+            _stateContainer.IsOutlookConnected  = false;
             _stateContainer.DidLastFetchSucceed = true;
         }
 
@@ -98,6 +101,8 @@ public sealed class OutlookGodsDatabaseService : IGodsDatabaseService
         if (!await IsAuthenticatedAsync())
         {
             _logger.LogInformation("[Outlook DB] Offline: card '{Subject}' saved in-memory only.", card.Subject);
+            // Still notify so components re-render with the optimistically-added card
+            _stateContainer.NotifyStateChanged();
             return;
         }
 

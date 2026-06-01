@@ -1138,9 +1138,10 @@
 
         await DatabaseService.SaveEventAsync(_selectedCard);
 
-        var events = await DatabaseService.FetchAllEventsAsync();
+        // Read from optimistically-updated state — do NOT re-fetch from Outlook
+        // immediately (eventual consistency means the new data won't be there yet).
         _allCards.Clear();
-        _allCards.AddRange(events);
+        _allCards.AddRange(StateContainer.Cards);
 
         GenerateCalendarGrid();
         _isDetailsEditing = false;
@@ -1221,9 +1222,9 @@
 
         await DatabaseService.SaveEventAsync(_selectedCard);
 
-        var events = await DatabaseService.FetchAllEventsAsync();
+        // Read from optimistically-updated state
         _allCards.Clear();
-        _allCards.AddRange(events);
+        _allCards.AddRange(StateContainer.Cards);
 
         GenerateCalendarGrid();
         CancelEditSubEvent();
@@ -1237,9 +1238,9 @@
         _selectedCard.SubEvents.Remove(sub);
         await DatabaseService.SaveEventAsync(_selectedCard);
 
-        var events = await DatabaseService.FetchAllEventsAsync();
+        // Read from optimistically-updated state
         _allCards.Clear();
-        _allCards.AddRange(events);
+        _allCards.AddRange(StateContainer.Cards);
 
         GenerateCalendarGrid();
         _logMessage = $"[System] Del-begivenheden '{sub.Title}' blev fjernet fra programmet.";
@@ -1340,9 +1341,10 @@
 
         await DatabaseService.SaveEventAsync(newCard);
 
-        var events = await DatabaseService.FetchAllEventsAsync();
+        // Read from optimistically-updated state — do NOT re-fetch from Outlook
+        // immediately after creating. The new Outlook event needs time to propagate.
         _allCards.Clear();
-        _allCards.AddRange(events);
+        _allCards.AddRange(StateContainer.Cards);
 
         GenerateCalendarGrid();
 

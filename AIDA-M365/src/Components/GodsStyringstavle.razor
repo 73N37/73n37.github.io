@@ -565,11 +565,13 @@
     {
         await DatabaseService.SaveEventAsync(card);
 
-        var events = await DatabaseService.FetchAllEventsAsync();
-        _cards = new List<GodsEventCard>(events);
+        // Read from the optimistically-updated state container — do NOT re-fetch from
+        // Outlook here. Outlook has eventual consistency; a re-fetch immediately after
+        // save returns stale data and makes the card disappear for ~0.5 s.
+        _cards = new List<GodsEventCard>(StateContainer.Cards);
 
         _lastUpdatedMessage =
-            $"[Synkronisering] Gen-synkroniserede '{card.Subject}' via MS Graph. Ny tid: {card.StartUtc.ToLocalTime():g} i kolonnen '{card.SectionKey}'.";
+            $"[Synkronisering] Opdaterede '{card.Subject}' → {card.StartUtc.ToLocalTime():g} i kolonnen '{card.SectionKey}'.";
 
         StateHasChanged();
     }
@@ -582,8 +584,8 @@
             await DatabaseService.DeleteEventAsync(card.GraphEventId);
         }
 
-        var events = await DatabaseService.FetchAllEventsAsync();
-        _cards = new List<GodsEventCard>(events);
+        // Use optimistic state — DeleteEventAsync already removed the cards from StateContainer.
+        _cards = new List<GodsEventCard>(StateContainer.Cards);
 
         _sections.Remove(section);
         _lastUpdatedMessage = $"Slettede kolonnen: {section.Title}";
@@ -594,8 +596,8 @@
     {
         await DatabaseService.DeleteEventAsync(card.GraphEventId);
 
-        var events = await DatabaseService.FetchAllEventsAsync();
-        _cards = new List<GodsEventCard>(events);
+        // Use optimistic state — DeleteEventAsync already removed the card from StateContainer.
+        _cards = new List<GodsEventCard>(StateContainer.Cards);
 
         _lastUpdatedMessage = $"[System] Selskabet '{card.Subject}' blev slettet permanent.";
         StateHasChanged();
@@ -668,8 +670,12 @@
 
         await DatabaseService.SaveEventAsync(newCard);
 
-        var events = await DatabaseService.FetchAllEventsAsync();
-        _cards = new List<GodsEventCard>(events);
+        // Read from the optimistically-updated state container — do NOT re-fetch from
+        // Outlook immediately after creating an event. Outlook has eventual consistency;
+        // a re-fetch right after save returns stale data (without the new event)
+        // making the card appear for ~0.5 s and then disappear. The background sync
+        // via Graph API will update Outlook asynchronously.
+        _cards = new List<GodsEventCard>(StateContainer.Cards);
 
         _lastUpdatedMessage = _isStaffView
             ? $"[Succes] Selskabet '{newCard.Subject}' blev oprettet og lagt i kolonnen '{newCard.SectionKey}'."

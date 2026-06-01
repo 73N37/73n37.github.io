@@ -28,6 +28,23 @@
     <script type="text/javascript">
         // Mark this as an auth callback so 404.html skips it
         sessionStorage.setItem('msal_callback', 'true');
+
+        // Clean up any stale MSAL redirect state keys that might contain
+        // "undefined" (from a previously interrupted login), which would cause
+        // MSAL to throw '"undefined" is not valid JSON' on this attempt.
+        try {
+            var keysToRemove = [];
+            for (var i = 0; i < sessionStorage.length; i++) {
+                var key = sessionStorage.key(i);
+                if (key && (key.indexOf('msal.') === 0 || key.indexOf('msal-') === 0)) {
+                    var val = sessionStorage.getItem(key);
+                    if (val === 'undefined' || val === null) {
+                        keysToRemove.push(key);
+                    }
+                }
+            }
+            keysToRemove.forEach(function(k) { sessionStorage.removeItem(k); });
+        } catch(e) { /* ignore */ }
     </script>
 
     <base href="/" />
