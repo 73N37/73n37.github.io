@@ -115,3 +115,32 @@ body {
 #blazor-error-ui {
     display: none !important;
 }
+
+/* Premium KPI Glassmorphism Hover Animations */
+.glass-panel:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.06) !important;
+    border-color: rgba(255, 255, 255, 0.45) !important;
+}
+
+.dark-mode .glass-panel:hover {
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22) !important;
+    border-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+/* Premium Interactive Upcoming Events List Cards */
+.hover-card {
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+}
+
+.hover-card:hover {
+    transform: translateX(6px);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.04) !important;
+    background-color: rgba(0, 0, 0, 0.005) !important;
+}
+
+.dark-mode .hover-card:hover {
+    background-color: rgba(255, 255, 255, 0.015) !important;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15) !important;
+}
+

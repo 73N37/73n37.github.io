@@ -71,13 +71,13 @@
                                     @(card.EventSubtype.Equals("Wedding", StringComparison.OrdinalIgnoreCase) ? "Bryllup" : card.EventSubtype.Equals("Birthday", StringComparison.OrdinalIgnoreCase) ? "Privat Fest" : card.EventSubtype)
                                 </MudChip>
                             }
-                            @if (!string.IsNullOrWhiteSpace(card.Priority))
+                            @if (!string.IsNullOrWhiteSpace(card.Priority) && !card.Priority.Equals("High", StringComparison.OrdinalIgnoreCase) && !card.Priority.Equals("Høj", StringComparison.OrdinalIgnoreCase))
                             {
                                 <MudChip Size="Size.Small" 
-                                         Color="@(card.Priority.Equals("High", StringComparison.OrdinalIgnoreCase) || card.Priority.Equals("Høj", StringComparison.OrdinalIgnoreCase) ? Color.Error : Color.Default)" 
+                                         Color="Color.Default" 
                                          Variant="Variant.Outlined"
                                          Style="font-size: 0.72rem; border-radius: 6px;">
-                                    @(card.Priority.Equals("High", StringComparison.OrdinalIgnoreCase) ? "Høj" : card.Priority.Equals("Normal", StringComparison.OrdinalIgnoreCase) ? "Normal" : card.Priority)
+                                    @(card.Priority.Equals("Normal", StringComparison.OrdinalIgnoreCase) ? "Normal" : card.Priority)
                                 </MudChip>
                             }
                         </MudStack>
